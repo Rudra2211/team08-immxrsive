@@ -1,0 +1,54 @@
+{
+  "team": "Team 08",
+  "project_option": "Project 1 - ImmXrsive Talent and Industry Platform",
+  "release": "R1",
+  "release_tag": "R1-submission",
+  "frontend_base_url": "https://REPLACE-frontend.onrender.com",
+  "api_base_url": "https://REPLACE-backend.onrender.com",
+
+  "directory_endpoint": "/api/students",
+  "student_detail_endpoint": "/api/students/{id}",
+  "project_detail_endpoint": "/api/projects/{id}",
+
+  "student_page_route": "/student.html?id={id}",
+  "project_page_route": "/project.html?id={id}",
+
+  "query_parameters": {
+    "text": "q",
+    "skill": "skill",
+    "availability": "availability",
+    "status": "status"
+  },
+  "query_parameter_notes": "Repeatable parameters: ?skill=Unity&skill=C%23. Comma-separated values are also accepted. Multiple skills combine with AND; multiple availability or status values combine with OR within their category; categories combine with AND.",
+
+  "directory_results_path": "",
+  "id_field": "id",
+  "skills_field": "skills",
+  "contributors_field": "contributors",
+
+  "additional_fields": {
+    "name_field": "name",
+    "headline_field": "headline",
+    "status_field": "status",
+    "availability_field": "availability",
+    "project_count_field": "project_count",
+    "contributor_id_field": "student_id",
+    "contributor_role_field": "role",
+    "project_technologies_field": "technologies",
+    "student_projects_field": "projects"
+  },
+
+  "skills_endpoint": "/api/skills",
+  "health_endpoint": "/health",
+
+  "inquiry": {
+    "simulated": true,
+    "contract": "backend/data/company_intake_simulation.md",
+    "student_inquiry_route": "/inquiry.html?source_type=student&source_id={id}",
+    "project_inquiry_route": "/inquiry.html?source_type=project&source_id={id}",
+    "submit_endpoint": "/api/inquiries",
+    "context_fields": ["source_type", "source_id", "source_name", "source_url"]
+  },
+
+  "notes": "Routes use query-string identifiers so that every deep link resolves on a plain static host with no rewrite rules; links are shareable and survive a reload. Invalid ids return HTTP 404 from the API and a not-found page in the UI."
+}

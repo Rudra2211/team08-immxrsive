@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Talent Directory — ImmXrsive</title>
+<meta name="description" content="Discover Algoma University student and alumni talent, with real project evidence." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="index.html">ImmXrsive Talent Directory</a>
+    <span class="tag">Algoma University · student and alumni talent</span>
+  </div>
+</header>
+
+<main id="main">
+  <h1>Find student talent</h1>
+  <p class="lede">Search by name, headline or skill, then narrow by skill, availability and status. No account needed.</p>
+
+  <form class="panel" id="filters" novalidate>
+    <div class="controls-row">
+      <div>
+        <label for="q">Search by name, headline or skill</label>
+        <input type="search" id="q" name="q" autocomplete="off" placeholder="e.g. XR, Unity, Sofia" />
+        <p class="help" id="q-help">Case-insensitive. Matches part of a word.</p>
+      </div>
+      <div>
+        <label for="skill">Skills</label>
+        <select id="skill" name="skill" multiple aria-describedby="skill-help">
+        </select>
+        <p class="help" id="skill-help">Hold Ctrl (Cmd on Mac) to pick more than one. A student must have <strong>all</strong> selected skills.</p>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <fieldset>
+        <legend>Availability</legend>
+        <div class="checks">
+          <label><input type="checkbox" name="availability" value="internship" /> Internship</label>
+          <label><input type="checkbox" name="availability" value="full-time" /> Full-time</label>
+          <label><input type="checkbox" name="availability" value="contract" /> Contract</label>
+        </div>
+        <p class="help">Any selected type may match.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Status</legend>
+        <div class="checks">
+          <label><input type="checkbox" name="status" value="current" /> Current student</label>
+          <label><input type="checkbox" name="status" value="alumni" /> Alumni</label>
+        </div>
+        <p class="help">Any selected status may match.</p>
+      </fieldset>
+    </div>
+
+    <button type="submit">Apply filters</button>
+    <button type="button" class="secondary" id="clear">Clear all filters</button>
+
+    <div class="active-filters" id="active-filters" aria-live="polite"></div>
+  </form>
+
+  <h2 id="results-heading">Results</h2>
+  <p class="result-count" id="result-count" role="status" aria-live="polite">Loading students…</p>
+  <ul class="cards" id="results" aria-labelledby="results-heading"></ul>
+  <div id="results-error"></div>
+</main>
+
+<footer class="site"><div class="inner">COSC-3506 Team 08 · Release 1 · synthetic fixture data</div></footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="directory.js"></script>
+</body>
+</html>

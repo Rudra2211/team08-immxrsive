@@ -1,0 +1,16 @@
+{
+  "name": "team08-immxrsive-backend",
+  "version": "1.0.0",
+  "description": "COSC-3506 Team 08 — Project 1 Release 1 API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "import": "node import.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0"
+  }
+}

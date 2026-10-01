@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Employer inquiry — ImmXrsive Talent Directory</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="index.html">ImmXrsive Talent Directory</a>
+    <span class="tag">Algoma University · student and alumni talent</span>
+  </div>
+</header>
+<main id="main">
+  <p class="breadcrumb" id="breadcrumb"><a href="index.html">&larr; Back to the talent directory</a></p>
+  <h1>Employer inquiry</h1>
+  <p class="lede">Send an inquiry to ImmXrsive. No account is required.</p>
+
+  <div class="panel" id="context-panel">
+    <h2 style="margin-top:0">You are enquiring about</h2>
+    <p id="context-summary" class="result-count">Reading inquiry context…</p>
+  </div>
+
+  <form class="panel" id="inquiry-form" novalidate>
+    <div class="controls-row">
+      <div>
+        <label for="company_name">Company name</label>
+        <input type="text" id="company_name" name="company_name" autocomplete="organization" required />
+      </div>
+      <div>
+        <label for="contact_name">Your name</label>
+        <input type="text" id="contact_name" name="contact_name" autocomplete="name" required />
+      </div>
+    </div>
+    <div>
+      <label for="contact_email">Your email address</label>
+      <input type="email" id="contact_email" name="contact_email" autocomplete="email" required aria-describedby="email-help" />
+      <p class="help" id="email-help">ImmXrsive staff will reply to this address.</p>
+    </div>
+    <div style="margin-top:0.9rem">
+      <label for="description">What are you enquiring about?</label>
+      <textarea id="description" name="description" required aria-describedby="desc-help"></textarea>
+      <p class="help" id="desc-help">For example the role, project scope, or timeline you have in mind.</p>
+    </div>
+    <p style="margin-top:0.9rem">
+      <button type="submit" id="submit-btn">Send inquiry</button>
+    </p>
+    <div id="form-message" aria-live="polite"></div>
+  </form>
+</main>
+<footer class="site"><div class="inner">COSC-3506 Team 08 · Release 1 · synthetic fixture data</div></footer>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="inquiry.js"></script>
+</body>
+</html>
