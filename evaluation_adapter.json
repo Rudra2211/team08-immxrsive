@@ -3,8 +3,8 @@
   "project_option": "Project 1 - ImmXrsive Talent and Industry Platform",
   "release": "R1",
   "release_tag": "R1-submission",
-  "frontend_base_url": "https://REPLACE-frontend.onrender.com",
-  "api_base_url": "https://REPLACE-backend.onrender.com",
+  "frontend_base_url": "https://team08-r1-frontend.onrender.com",
+  "api_base_url": "https://team08-r1-backend.onrender.com",
 
   "directory_endpoint": "/api/students",
   "student_detail_endpoint": "/api/students/{id}",
