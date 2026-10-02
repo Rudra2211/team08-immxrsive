@@ -6,9 +6,9 @@ Public talent discovery: an employer can find a student, inspect the project
 evidence behind the match, and start an inquiry without creating an account.
 
 ## Live links
-- Frontend: _add deployed URL_
-- API: _add deployed URL_
-- Health: _add deployed URL_/health
+- Frontend: https://team08-r1-frontend.onrender.com
+- API: https://team08-r1-backend.onrender.com
+- Health: https://team08-r1-backend.onrender.com/health
 
 ## Stack
 | Part | Technology | Hosting |
