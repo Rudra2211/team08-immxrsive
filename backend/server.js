@@ -71,17 +71,21 @@ app.get("/api/students", async (req, res) => {
   const params = [];
   const where = ["s.profile_status = 'published'"];
 
-  if (q) {
-    params.push(`%${q}%`);
-    const p = `$${params.length}`;
-    where.push(`(
-      s.name ILIKE ${p}
-      OR s.headline ILIKE ${p}
-      OR EXISTS (
-        SELECT 1 FROM student_skills ss
-        WHERE ss.student_id = s.id AND ss.skill_name ILIKE ${p}
-      )
-    )`);
+   if (q) {
+    // Each whitespace-separated term must match somewhere, so "Unity C#" finds
+    // students holding both rather than searching for that literal phrase (issue #1).
+    for (const term of q.split(/[\s,]+/).filter(Boolean)) {
+      params.push(`%${term}%`);
+      const p = `$${params.length}`;
+      where.push(`(
+        s.name ILIKE ${p}
+        OR s.headline ILIKE ${p}
+        OR EXISTS (
+          SELECT 1 FROM student_skills ss
+          WHERE ss.student_id = s.id AND ss.skill_name ILIKE ${p}
+        )
+      )`);
+    }
   }
 
   if (skills.length) {
