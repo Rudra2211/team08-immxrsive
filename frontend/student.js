@@ -12,64 +12,12 @@ function notFound(message) {
 
 function render(s) {
   document.title = `${s.name} — ImmXrsive Talent Directory`;
+  // R2.23 — the chosen preset is a data attribute, so the themes stay in CSS.
+  document.documentElement.setAttribute("data-theme", s.theme || "classic");
   root.innerHTML = "";
-
-  root.appendChild(el("h1", { text: s.name }));
-  root.appendChild(el("p", { class: "lede", text: s.headline || "" }));
-
-  const panel = el("div", { class: "panel" });
-  const facts = el("dl", { class: "facts" });
-  const addFact = (term, value) => {
-    facts.appendChild(el("dt", { text: term }));
-    facts.appendChild(el("dd", { text: value }));
-  };
-  addFact("Status", titleCase(s.status));
-  addFact("Program", s.program || "Not stated");
-  addFact("Availability", (s.availability || []).map(titleCase).join(", ") || "Not stated");
-  panel.appendChild(facts);
-
-  panel.appendChild(el("h2", { text: "Skills" }));
-  panel.appendChild(tagList(s.skills));
-
-  const links = Object.entries(s.links || {});
-  panel.appendChild(el("h2", { text: "Professional links" }));
-  if (links.length === 0) {
-    panel.appendChild(el("p", { class: "meta", text: "No public links provided." }));
-  } else {
-    const ul = el("ul", { class: "tags" });
-    for (const [label, url] of links) {
-      ul.appendChild(el("li", {}, [externalLink(titleCase(label), url)]));
-    }
-    panel.appendChild(ul);
-  }
-
-  panel.appendChild(el("p", {}, [
-    el("a", {
-      class: "btn",
-      href: inquiryUrl("student", s.id, s.name),
-      text: `Interested in working with ${s.name.split(" ")[0]}?`,
-    }),
-  ]));
-  root.appendChild(panel);
-
-  root.appendChild(el("h2", { text: "Project evidence" }));
-  if (!s.projects || s.projects.length === 0) {
-    root.appendChild(el("p", { class: "meta", text: "No public projects recorded for this student yet." }));
-    return;
-  }
-
-  const list = el("ul", { class: "cards" });
-  for (const p of s.projects) {
-    const li = el("li", { class: "card" });
-    const h3 = el("h3");
-    h3.appendChild(el("a", { href: projectUrl(p.id), text: p.title }));
-    li.appendChild(h3);
-    li.appendChild(el("p", { class: "meta", text: `Role on this project: ${p.role || "Contributor"}` }));
-    li.appendChild(el("p", { class: "headline", text: p.description || "" }));
-    li.appendChild(tagList(p.technologies));
-    list.appendChild(li);
-  }
-  root.appendChild(list);
+  // The shared renderer in app.js draws every field, respects section_order,
+  // and leaves out whatever the student kept private (R2.19, R2.28).
+  root.appendChild(profileBody(s, { inquiry: true }));
 }
 
 (async function start() {

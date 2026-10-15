@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Edit your profile — ImmXrsive</title>
+<meta name="description" content="Build your Algoma student profile: skills, links, privacy, presentation, and publishing." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="index.html">ImmXrsive Talent Directory</a>
+    <span class="tag">Algoma University · student and alumni talent</span>
+    <a class="btn" href="account.html">Your account</a>
+  </div>
+</header>
+
+<main id="main">
+  <p class="breadcrumb"><a href="account.html">&larr; Back to your account</a></p>
+
+  <h1>Your profile</h1>
+  <p class="lede">Nothing here is public until you publish it, and you choose which fields employers can see.</p>
+
+  <!-- R2.27 — every error and confirmation is announced from this one region. -->
+  <div id="notice" role="alert" aria-live="assertive"></div>
+
+  <!-- Signed out, or not yet verified. -->
+  <section class="panel" id="gate" hidden>
+    <h2 id="gate-title">Sign in first</h2>
+    <p id="gate-text"></p>
+    <p><a class="btn" href="account.html">Go to your account</a></p>
+  </section>
+
+  <!-- Verified, but no profile exists yet. -->
+  <section class="panel" id="create" hidden>
+    <h2>Start your profile</h2>
+    <p>This creates a private draft. Nobody can see it until you publish it.</p>
+    <form id="create-form" novalidate>
+      <label for="create-name">Your full name</label>
+      <input type="text" id="create-name" name="name" autocomplete="name" aria-describedby="create-name-help" />
+      <p class="help" id="create-name-help">You can change this at any time.</p>
+      <button type="submit" id="create-btn">Create my profile</button>
+    </form>
+  </section>
+
+  <div id="editor" hidden>
+    <!-- R2.21 — the current status is always on screen. -->
+    <section class="panel">
+      <h2>Status</h2>
+      <p id="status-text" role="status"></p>
+      <p>
+        <button type="button" id="publish-btn">Publish my profile</button>
+        <button type="button" id="unpublish-btn" class="secondary">Unpublish my profile</button>
+      </p>
+      <p class="help">Unpublishing takes you out of the public directory and keeps everything you have written.</p>
+    </section>
+
+    <!-- R2.11 — the maintained profile. -->
+    <form class="panel" id="profile-form" novalidate>
+      <h2>About you</h2>
+      <div class="controls-row">
+        <div>
+          <label for="name">Full name</label>
+          <input type="text" id="name" name="name" autocomplete="name" />
+        </div>
+        <div>
+          <label for="headline">Headline</label>
+          <input type="text" id="headline" name="headline" aria-describedby="headline-help" />
+          <p class="help" id="headline-help">One line, such as “Computer science student working in XR”. You need this before you can publish.</p>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <div>
+          <label for="program">Program</label>
+          <input type="text" id="program" name="program" aria-describedby="program-help" />
+          <p class="help" id="program-help">For example “BSc Computer Science”.</p>
+        </div>
+        <div>
+          <label for="status">Where you are now</label>
+          <select id="status" name="status">
+            <option value="current">Current student</option>
+            <option value="alumni">Alumni</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label for="bio">About you</label>
+        <textarea id="bio" name="bio" aria-describedby="bio-help"></textarea>
+        <p class="help" id="bio-help">A short paragraph in your own words. Line breaks are kept.</p>
+      </div>
+
+      <div class="controls-row">
+        <div>
+          <label for="location_text">Location</label>
+          <input type="text" id="location_text" name="location_text" aria-describedby="location-help" />
+          <p class="help" id="location-help">For example “Sault Ste. Marie, Ontario”.</p>
+        </div>
+        <div>
+          <label for="contact_email">Contact email</label>
+          <input type="email" id="contact_email" name="contact_email" autocomplete="email" aria-describedby="contact-help" />
+          <p class="help" id="contact-help">Shown only if you turn it on under “What employers can see”.</p>
+        </div>
+      </div>
+
+      <fieldset>
+        <legend>Work you are available for</legend>
+        <div class="checks" id="availability-checks"></div>
+        <p class="help">Choose any that apply. Employers filter the directory on this.</p>
+      </fieldset>
+
+      <h2>Skills</h2>
+      <!-- R2.12 — skills come from the standardized list, never free text. -->
+      <fieldset>
+        <legend>Choose your skills from the standardized list</legend>
+        <div class="checks" id="skill-checks"></div>
+        <p class="help">Employers search on these exact names, which is why the list is fixed.</p>
+      </fieldset>
+
+      <div>
+        <label for="skill-suggestion">Suggest a skill we are missing</label>
+        <input type="text" id="skill-suggestion" name="skill-suggestion" aria-describedby="skill-suggestion-help" />
+        <p class="help" id="skill-suggestion-help">One skill at a time. A suggestion is sent to us for review: it does not appear on your profile and it does not become a search filter.</p>
+      </div>
+
+      <h2>Education and experience</h2>
+      <div>
+        <label for="education">Education</label>
+        <textarea id="education" name="education" aria-describedby="education-help"></textarea>
+        <p class="help" id="education-help">Programs, dates and awards. One per line reads well.</p>
+      </div>
+      <div>
+        <label for="experience">Experience</label>
+        <textarea id="experience" name="experience" aria-describedby="experience-help"></textarea>
+        <p class="help" id="experience-help">Roles, employers and what you did. One per line reads well.</p>
+      </div>
+
+      <h2>Links</h2>
+      <div class="controls-row">
+        <div>
+          <label for="github">GitHub</label>
+          <input type="text" id="github" name="github" inputmode="url" aria-describedby="links-help" />
+        </div>
+        <div>
+          <label for="linkedin">LinkedIn</label>
+          <input type="text" id="linkedin" name="linkedin" inputmode="url" aria-describedby="links-help" />
+        </div>
+      </div>
+      <div>
+        <label for="portfolio">Portfolio or website</label>
+        <input type="text" id="portfolio" name="portfolio" inputmode="url" aria-describedby="links-help" />
+        <p class="help" id="links-help">Start each address with <strong>https://</strong>. An address without it is not saved.</p>
+      </div>
+
+      <h2>What employers can see</h2>
+      <!-- R2.18 — one plain-language control per field. -->
+      <fieldset>
+        <legend>Tick what you want on your public profile</legend>
+        <div class="checks" id="visibility-checks"></div>
+        <p class="help">Anything you leave unticked is left out of your public profile completely. Your name, headline and skills are always shown, because employers search on them.</p>
+      </fieldset>
+
+      <h2>Presentation</h2>
+      <!-- R2.23 — theme and section order. -->
+      <div>
+        <label for="theme">Colour theme</label>
+        <select id="theme" name="theme" aria-describedby="theme-help"></select>
+        <p class="help" id="theme-help">Changes the colours of your public profile only.</p>
+      </div>
+
+      <fieldset>
+        <legend>Order of the sections on your public profile</legend>
+        <ul class="row-list" id="order-list"></ul>
+        <p class="help" id="order-state" aria-live="polite"></p>
+      </fieldset>
+
+      <p><button type="submit" id="save-btn">Save my profile</button></p>
+    </form>
+
+    <!-- R2.13 - R2.17 — resume import, reviewed before anything is written. -->
+    <section class="panel">
+      <h2>Import from a resume</h2>
+      <p>Upload a PDF and we will suggest values from it. <strong>Nothing on your profile changes until you choose Apply.</strong></p>
+      <form id="import-form" novalidate>
+        <label for="resume-file">Your resume as a PDF</label>
+        <input type="file" id="resume-file" name="resume" accept=".pdf,application/pdf" aria-describedby="resume-help" />
+        <p class="help" id="resume-help">PDF only, up to 5 MB. We read the text and do not keep the file.</p>
+        <button type="submit" id="import-btn">Upload and review</button>
+      </form>
+      <div id="review"></div>
+    </section>
+
+    <!-- R2.20 — preview, including what is left out. -->
+    <section class="panel">
+      <h2>Preview</h2>
+      <p>See exactly what a visitor would see, and which fields are left out.</p>
+      <p><button type="button" id="preview-btn" class="secondary">Preview my public profile</button></p>
+      <div id="preview"></div>
+    </section>
+  </div>
+</main>
+
+<footer class="site"><div class="inner">COSC-3506 Team 08 · Release 2 · synthetic fixture data</div></footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="profile-edit.js"></script>
+</body>
+</html>

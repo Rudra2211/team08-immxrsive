@@ -134,3 +134,33 @@ footer.site { border-top: 1px solid var(--line); background: var(--surface); pad
   position: absolute; width: 1px; height: 1px; overflow: hidden;
   clip: rect(0 0 0 0); white-space: nowrap;
 }
+
+/* ---- Release 2 ---- */
+
+/* R2.23 — the three presets only re-point the shared tokens, so every
+   component follows the theme without a single theme-specific rule.
+   "classic" is the default above, so it needs no block. */
+[data-theme="slate"] {
+  --bg: #eef1f6; --surface: #ffffff; --ink: #1b2330; --muted: #54607a;
+  --line: #ccd5e2; --brand: #2f4a6d; --brand-dark: #1f3651;
+}
+[data-theme="warm"] {
+  --bg: #fdf6ef; --surface: #ffffff; --ink: #2a2119; --muted: #6d5c49;
+  --line: #e6d7c4; --brand: #a0511c; --brand-dark: #7a3c13;
+}
+
+/* Bios, education and imported experience keep their line breaks without any
+   markup (R2.25), and a long unbroken string cannot push a 390px page
+   sideways (R2.26). */
+.prose { white-space: pre-line; overflow-wrap: anywhere; margin: 0 0 0.75rem; }
+dl.facts dd { overflow-wrap: anywhere; min-width: 0; }
+input[type="file"] { max-width: 100%; }
+
+/* Reorderable rows: label plus two buttons, wrapping on a narrow screen. */
+.row-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.row-list li {
+  display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--line); border-radius: 8px; padding: 0.45rem 0.6rem;
+}
+.row-list button { padding: 0.35rem 0.75rem; font-size: 0.9rem; }
