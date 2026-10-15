@@ -11,8 +11,13 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "")
   .map((o) => o.trim())
   .filter(Boolean);
 
-app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true }));
+// credentials:true is required for the session cookie to survive the
+// frontend/backend origin split on Render (R2.01).
+app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true, credentials: true }));
 app.use(express.json());
+
+require("./auth").register(app);
+require("./verify").register(app);
 
 /** Query params may arrive as ?skill=A&skill=B or ?skill=A,B. Normalise both. */
 function toList(value) {
@@ -71,7 +76,7 @@ app.get("/api/students", async (req, res) => {
   const params = [];
   const where = ["s.profile_status = 'published'"];
 
-   if (q) {
+  if (q) {
     // Each whitespace-separated term must match somewhere, so "Unity C#" finds
     // students holding both rather than searching for that literal phrase (issue #1).
     for (const term of q.split(/[\s,]+/).filter(Boolean)) {

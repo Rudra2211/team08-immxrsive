@@ -13,8 +13,11 @@ const pool = new Pool({
 });
 
 async function initDb() {
-  const sql = fs.readFileSync(path.join(__dirname, "schema.sql"), "utf8");
-  await pool.query(sql);
+  // R1 schema first, then the additive R2 migration. Both are idempotent, so a
+  // restart or redeploy re-runs them harmlessly.
+  for (const file of ["schema.sql", "schema_r2.sql"]) {
+    await pool.query(fs.readFileSync(path.join(__dirname, file), "utf8"));
+  }
 }
 
 module.exports = { pool, initDb };
