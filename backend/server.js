@@ -18,6 +18,9 @@ app.use(express.json());
 
 require("./auth").register(app);
 require("./verify").register(app);
+const { publicView } = require("./profile");
+require("./profile").register(app);
+require("./resume").register(app);
 
 /** Query params may arrive as ?skill=A&skill=B or ?skill=A,B. Normalise both. */
 function toList(value) {
@@ -146,6 +149,8 @@ app.get("/api/students/:id", async (req, res) => {
   try {
     const r = await pool.query(
       `SELECT s.id, s.name, s.headline, s.program, s.status, s.links,
+        s.bio, s.location_text, s.contact_email, s.education, s.experience,
+        s.visibility, s.theme, s.section_order,
         COALESCE((SELECT ARRAY_AGG(ss.skill_name ORDER BY ss.skill_name)
                   FROM student_skills ss WHERE ss.student_id = s.id), '{}') AS skills,
         COALESCE((SELECT ARRAY_AGG(sa.value ORDER BY sa.value)
@@ -169,7 +174,13 @@ app.get("/api/students/:id", async (req, res) => {
       [id]
     );
 
-    res.json({ ...r.rows[0], projects: projects.rows });
+    // R2.19 — a field the student marked private must be ABSENT from the
+    // public response, not merely hidden by the frontend. publicView is the
+    // single place that decides, and it serves the preview too, so what a
+    // student previews is exactly what a visitor receives.
+    const row = r.rows[0];
+    const shaped = publicView(row, row.skills || [], row.availability || []);
+    res.json({ ...shaped, projects: projects.rows });
   } catch (err) {
     console.error("GET /api/students/:id failed:", err.message);
     res.status(500).json({ error: "Could not load student." });

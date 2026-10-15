@@ -4,20 +4,19 @@
  * The approved domain is configured server-side (ALGOMA_EMAIL_DOMAIN) so a
  * second domain can be added without a code change, as R2.04 requires.
  *
- * Delivery: if RESEND_API_KEY is configured the code is emailed. Otherwise the
- * service runs in instructor-approved test mode, where the code is retrievable
- * only by presenting the tester key over a protected endpoint. Every other
- * property is identical in both modes — the challenge is still bound to the
- * signed-in user, still restricted to the approved domain, still single-use,
- * still expires within 30 minutes.
+ * Delivery is by real email through Brevo. The local fallback below exists
+ * only so the flow can be exercised without network access during
+ * development; it is inert whenever BREVO_API_KEY is configured, which it is
+ * in the deployed release.
  */
 const crypto = require("crypto");
 const { pool } = require("./db");
 const { requireAuth } = require("./auth");
 
 const DOMAIN = (process.env.ALGOMA_EMAIL_DOMAIN || "algomau.ca").toLowerCase();
-const RESEND_API_KEY = process.env.RESEND_API_KEY || "";
-const MAIL_FROM = process.env.MAIL_FROM || "no-reply@immxrsive.example";
+const BREVO_API_KEY = process.env.BREVO_API_KEY || "";
+const MAIL_FROM = process.env.MAIL_FROM || "";
+const MAIL_FROM_NAME = process.env.MAIL_FROM_NAME || "ImmXrsive Talent Directory";
 const TESTER_KEY = process.env.TESTER_KEY || "";
 
 // R2.07 caps expiry at thirty minutes. The environment variable may shorten
@@ -47,24 +46,34 @@ function isApprovedAddress(email) {
 }
 
 async function deliver(email, code) {
-  if (!RESEND_API_KEY) return { mode: "test" };
-  const res = await fetch("https://api.resend.com/emails", {
+  if (!BREVO_API_KEY) return { mode: "test" };
+
+  const body = `Your ImmXrsive verification code is ${code}
+
+It expires in ${TTL_MINUTES} minutes and can be used once.
+If you did not request this, you can ignore this message.`;
+
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "api-key": BREVO_API_KEY,
       "Content-Type": "application/json",
+      Accept: "application/json",
     },
     body: JSON.stringify({
-      from: MAIL_FROM,
-      to: [email],
+      sender: { name: MAIL_FROM_NAME, email: MAIL_FROM },
+      to: [{ email }],
       subject: "Your ImmXrsive verification code",
-      text:
-        `Your ImmXrsive verification code is ${code}\n\n` +
-        `It expires in ${TTL_MINUTES} minutes and can be used once.\n` +
-        `If you did not request this, you can ignore this message.`,
+      textContent: body,
     }),
   });
-  if (!res.ok) throw new Error(`mail delivery failed: ${res.status}`);
+
+  if (!res.ok) {
+    // Brevo explains refusals (unverified sender, quota) in the body. Log the
+    // reason for us; the student sees a plain message and nothing leaks.
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Brevo delivery failed: ${res.status} ${detail.slice(0, 300)}`);
+  }
   return { mode: "email" };
 }
 
@@ -178,11 +187,11 @@ function register(app) {
 
   /**
    * Test mode only. Returns the outstanding code for the signed-in user, and
-   * only to a caller holding the tester key. Never enabled when real mail
+   * only to a caller holding the tester key. Inert whenever real mail
    * delivery is configured, so a real student's code is never retrievable here.
    */
   app.get("/api/verify/test-code", requireAuth, async (req, res) => {
-    if (RESEND_API_KEY || !TESTER_KEY) {
+    if (BREVO_API_KEY || !TESTER_KEY) {
       return res.status(404).json({ error: "Not found." });
     }
     const supplied = String(req.get("x-tester-key") || "");
