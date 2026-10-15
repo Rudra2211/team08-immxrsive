@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Your account — ImmXrsive</title>
+<meta name="description" content="Sign in with GitHub and verify your Algoma affiliation to create a student profile." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="index.html">ImmXrsive Talent Directory</a>
+    <span class="tag">Algoma University · student and alumni talent</span>
+  </div>
+</header>
+
+<main id="main">
+  <p class="breadcrumb"><a href="index.html">&larr; Back to the directory</a></p>
+
+  <h1>Your account</h1>
+  <p class="lede">Sign in with GitHub, confirm you study at Algoma, and build a profile employers can find.</p>
+
+  <div id="notice"></div>
+
+  <!-- Step 1 — signed out -->
+  <section class="panel" id="step-signin" hidden>
+    <h2>Step 1 · Sign in</h2>
+    <p>We use GitHub to sign you in. We ask only for your public profile — never access to your repositories.</p>
+    <p><a class="btn" id="signin-link" href="#">Sign in with GitHub</a></p>
+  </section>
+
+  <!-- Step 2 — signed in, not yet verified -->
+  <section class="panel" id="step-verify" hidden>
+    <h2>Step 2 · Confirm you study at Algoma</h2>
+    <p id="signed-in-as" class="meta"></p>
+
+    <form id="request-form" novalidate>
+      <label for="email">Your Algoma email address</label>
+      <input type="email" id="email" name="email" autocomplete="email"
+             placeholder="you@algomau.ca" aria-describedby="email-help" required />
+      <p class="help" id="email-help">Must end in <strong>@algomau.ca</strong>. We issue a six-digit code that expires in 30 minutes.</p>
+      <button type="submit" id="request-btn">Send me a code</button>
+    </form>
+
+    <form id="confirm-form" novalidate hidden>
+      <label for="code">Six-digit code</label>
+      <input type="text" id="code" name="code" inputmode="numeric" autocomplete="one-time-code"
+             pattern="[0-9]{6}" maxlength="6" aria-describedby="code-help" required />
+      <p class="help" id="code-help">It can be used once. If it expires, request another.</p>
+      <button type="submit" id="confirm-btn">Verify</button>
+      <button type="button" id="resend-btn" class="secondary">Send a new code</button>
+    </form>
+  </section>
+
+  <!-- Step 3 — verified -->
+  <section class="panel" id="step-profile" hidden>
+    <h2>Step 3 · Your profile</h2>
+    <p id="verified-as" class="meta"></p>
+    <p id="profile-state"></p>
+    <p><a class="btn" id="edit-link" href="profile-edit.html">Open the profile editor</a></p>
+  </section>
+
+  <p id="signout-row" hidden><button type="button" id="signout-btn" class="secondary">Sign out</button></p>
+</main>
+
+<footer class="site"><div class="inner">COSC-3506 Team 08 · Release 2 · synthetic fixture data</div></footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="account.js"></script>
+</body>
+</html>
