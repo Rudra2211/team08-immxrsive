@@ -1,0 +1,152 @@
+{
+  "team": "Team 08",
+  "project_option": "Project 1 - ImmXrsive Talent and Industry Platform",
+  "release": "R2",
+  "release_tag": "R2-submission",
+  "frontend_base_url": "https://team08-r1-frontend.onrender.com",
+  "api_base_url": "https://team08-r1-backend.onrender.com",
+
+  "directory_endpoint": "/api/students",
+  "student_detail_endpoint": "/api/students/{id}",
+  "project_detail_endpoint": "/api/projects/{id}",
+
+  "student_page_route": "/student.html?id={id}",
+  "project_page_route": "/project.html?id={id}",
+
+  "query_parameters": {
+    "text": "q",
+    "skill": "skill",
+    "availability": "availability",
+    "status": "status"
+  },
+  "query_parameter_notes": "Repeatable parameters: ?skill=Unity&skill=C%23. Comma-separated values are also accepted. Free-text search splits on whitespace and commas, and every term must match somewhere (name, headline or a skill), so 'Unity C#' returns students holding both rather than searching for that literal phrase. Multiple skills combine with AND; multiple availability or status values combine with OR within their category; categories combine with AND.",
+
+  "directory_results_path": "",
+  "id_field": "id",
+  "skills_field": "skills",
+  "contributors_field": "contributors",
+
+  "additional_fields": {
+    "name_field": "name",
+    "headline_field": "headline",
+    "status_field": "status",
+    "availability_field": "availability",
+    "project_count_field": "project_count",
+    "contributor_id_field": "student_id",
+    "contributor_role_field": "role",
+    "project_technologies_field": "technologies",
+    "student_projects_field": "projects"
+  },
+
+  "skills_endpoint": "/api/skills",
+  "health_endpoint": "/health",
+
+  "identity": {
+    "provider": "github",
+    "scopes_requested": [],
+    "scopes_note": "No scope parameter is sent on the authorize request. GitHub's consent screen reads 'Public data only', and the app's entry under github.com/settings/connections/applications shows 'Access public information (read-only)'. The product never requests or receives repository access.",
+    "sign_in_route": "/account.html",
+    "sign_in_start_endpoint": "/auth/github",
+    "oauth_callback_endpoint": "/auth/github/callback",
+    "sign_out_endpoint": "/auth/signout",
+    "session_endpoint": "/api/me",
+    "session_mechanism": "Opaque session id in an HttpOnly, Secure, SameSite=None cookie named sid, backed by a sessions table. Frontend and API are separate Render origins, so every authenticated fetch sends credentials: 'include' and CORS is configured with credentials: true.",
+    "identity_key": "GitHub's immutable numeric account id (users.github_user_id), not the login name. Renaming on GitHub updates the stored display login and returns the same internal user."
+  },
+
+  "affiliation_verification": {
+    "approved_domain": "algomau.ca",
+    "domain_configuration": "Server-side environment variable ALGOMA_EMAIL_DOMAIN; a second approved domain can be added without a code change.",
+    "domain_match_rule": "Exact comparison of the substring after the FINAL @. Addresses such as someone@algomau.ca.attacker.test or algomau.ca@gmail.com are rejected.",
+    "request_endpoint": "/api/verify/request",
+    "confirm_endpoint": "/api/verify/confirm",
+    "code_format": "six digits, generated with crypto.randomInt",
+    "code_storage": "SHA-256 hash only. The plaintext code is never logged, never returned in a response body and never written to the database.",
+    "ttl_minutes": 30,
+    "ttl_note": "Clamped server-side to a maximum of 30 minutes regardless of the environment variable.",
+    "single_use": true,
+    "single_use_note": "used_at is stamped on success; a replayed code returns 'That code has already been used.'",
+    "rate_limits": {
+      "sends_per_hour_per_user": 5,
+      "attempts_per_challenge": 6
+    },
+    "delivery": "Transactional email via Brevo (api.brevo.com/v3/smtp/email) from a verified sender.",
+    "supersede_rule": "Requesting a new code invalidates any outstanding one. Only the most recently issued code will verify."
+  },
+
+  "profile_self_service": {
+    "editor_route": "/profile-edit.html",
+    "account_route": "/account.html",
+    "create_endpoint": "POST /api/profile",
+    "read_endpoint": "GET /api/profile",
+    "update_endpoint": "PUT /api/profile",
+    "preview_endpoint": "GET /api/profile/preview",
+    "publish_endpoint": "POST /api/profile/publish",
+    "unpublish_endpoint": "POST /api/profile/unpublish",
+    "options_endpoint": "GET /api/profile/options",
+    "options_note": "Returns the 24-item skill vocabulary, the available themes, the reorderable section list and the visibility field names.",
+    "ownership_rule": "Every write resolves the caller's own students row from the session and compares it to any id supplied in the path or body. A mismatch returns HTTP 403 'You can only modify your own profile.' Being signed in is necessary but never sufficient.",
+    "draft_rule": "A new profile is created with profile_status = 'draft' and is absent from the public directory, from direct student URLs and from project contributor lists until the student publishes it.",
+    "directory_sync": "None required. A student profile IS a students row, so flipping profile_status to 'published' makes it appear in the Release 1 directory immediately, with no separate sync step or duplicated record."
+  },
+
+  "privacy": {
+    "visibility_fields": [
+      "availability",
+      "links",
+      "location",
+      "contact_email",
+      "education",
+      "experience"
+    ],
+    "default_private_fields": ["contact_email"],
+    "enforcement": "Server-side. A single publicView() function builds every public response and also the student's own preview, so the two cannot drift. A field marked private is OMITTED from the JSON entirely — it is not blanked, nulled, or hidden with CSS. Verify by requesting GET /api/students/{id} while logged out and searching the response for the field name: there will be no match.",
+    "verification_hint": "Open a private/incognito window and fetch https://team08-r1-backend.onrender.com/api/students/{id} directly. contact_email will be absent for any profile that has not explicitly made it public."
+  },
+
+  "resume_import": {
+    "import_endpoint": "POST /api/resume/import",
+    "pending_endpoint": "GET /api/resume/pending",
+    "apply_endpoint": "POST /api/resume/{id}/apply",
+    "reject_endpoint": "POST /api/resume/{id}/reject",
+    "accepted_types": ["application/pdf"],
+    "max_file_size_mb": 5,
+    "storage": "none",
+    "storage_note": "The uploaded PDF is parsed in memory with multer memoryStorage and discarded. No file bytes are written to disk or to the database; the resume_imports table holds only the filename label, the extracted candidate fields and a status.",
+    "review_before_apply": true,
+    "review_note": "An import lands in status 'pending'. Nothing reaches the profile until the student clicks Apply; Reject discards it. A second import never silently overwrites existing profile data.",
+    "extraction_method": "Deterministic. A fixed-vocabulary scan plus a section splitter — no language model is involved at any point, so there is nothing for text in an uploaded document to instruct, and no field can be invented that was not present in the file.",
+    "unparseable_handling": "A PDF that cannot be parsed returns a plain error message; the page remains usable and no partial data is applied.",
+    "contact_email_extraction": "Deliberately never extracted from a resume. Contact email is entered by the student and is private by default."
+  },
+
+  "skill_vocabulary": {
+    "endpoint": "GET /api/skills",
+    "size": 24,
+    "rule": "Public, filterable skills come only from the standardised vocabulary. Anything else a student types — including unnormalised variants such as 'C sharp' — is recorded in a skill_suggestions table and never becomes a public filter value.",
+    "normalisation_note": "Vocabulary matching is case-insensitive and tolerates the punctuation in entries such as C# and Node.js."
+  },
+
+  "presentation": {
+    "themes": ["classic", "modern", "minimal"],
+    "theme_field": "theme",
+    "section_order_field": "section_order",
+    "reorderable_sections": ["about", "skills", "projects", "experience"],
+    "note": "Theme and section order are stored on the profile and applied to the public student page, so a visitor sees the arrangement the student chose."
+  },
+
+  "input_safety": {
+    "rule": "All free-text fields are stripped of HTML tags and angle brackets on the server and rendered as text, not markup. A payload such as <script>alert(1)</script> appears on the page as those literal characters and never executes."
+  },
+
+  "inquiry": {
+    "simulated": true,
+    "contract": "backend/data/company_intake_simulation.md",
+    "student_inquiry_route": "/inquiry.html?source_type=student&source_id={id}",
+    "project_inquiry_route": "/inquiry.html?source_type=project&source_id={id}",
+    "submit_endpoint": "/api/inquiries",
+    "context_fields": ["source_type", "source_id", "source_name", "source_url"]
+  },
+
+  "notes": "Release 2 is additive over Release 1. The R1 schema is unchanged; schema_r2.sql adds new tables and new nullable columns and is idempotent, so a redeploy re-runs it harmlessly. All Release 1 routes, query semantics and deep links behave exactly as they did at the R1 freeze. Routes use query-string identifiers so every deep link resolves on a plain static host with no rewrite rules. Invalid ids return HTTP 404 from the API and a not-found page in the UI."
+}
