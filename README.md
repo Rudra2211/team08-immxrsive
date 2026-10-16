@@ -30,7 +30,8 @@ evidence behind the match, and start an inquiry without creating an account.
 | POST | `/api/inquiries` | Simulated company intake |
 
 ### Filter semantics
-- `q` — case-insensitive substring over name, headline and standardized skill names (R1.04)
+- `q` — case-insensitive, split on whitespace and commas; **every** term must match
+  the name, headline or a skill, so `Unity C#` returns students holding both (R1.04, issue #1)
 - `skill` — repeatable; a student must hold **every** selected skill (R1.06)
 - `availability` — repeatable; any selected value may match (R1.07)
 - `status` — repeatable; any selected value may match (R1.08)
