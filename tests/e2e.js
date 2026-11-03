@@ -101,7 +101,7 @@ const BASE = (process.env.BASE_URL || "http://127.0.0.1:4200").replace(/\/+$/, "
   // inquiry from student carries context
   await page.goto(`${BASE}/student.html?id=S04`);
   await page.waitForSelector("h1");
-  await page.click("a.btn");
+  await page.click('a.btn[href^="inquiry.html"]'); // the header also has an a.btn since R2
   await page.waitForSelector("#context-summary strong");
   const ctx = await page.locator("#context-summary").innerText();
   check("R1.18 student inquiry carries identity", ctx.includes("Sofia Martin") && ctx.includes("S04"), ctx);
@@ -116,7 +116,7 @@ const BASE = (process.env.BASE_URL || "http://127.0.0.1:4200").replace(/\/+$/, "
   // inquiry from project identifies the project
   await page.goto(`${BASE}/project.html?id=P06`);
   await page.waitForSelector("h1");
-  await page.click("a.btn");
+  await page.click('a.btn[href^="inquiry.html"]'); // the header also has an a.btn since R2
   await page.waitForSelector("#context-summary strong");
   const pctx = await page.locator("#context-summary").innerText();
   check("R1.19 project inquiry identifies project", pctx.includes("Accessible Event Discovery") && pctx.includes("P06"), pctx);

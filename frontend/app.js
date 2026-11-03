@@ -188,8 +188,18 @@ function profileSection(key, s, o) {
       const li = el("li", { class: "card" });
       li.appendChild(el(o.subTag, {}, [el("a", { href: projectUrl(p.id), text: p.title })]));
       li.appendChild(el("p", { class: "meta", text: `Role on this project: ${p.role || "Contributor"}` }));
+      // R3.15 — this student's own account of what they did, which is theirs to
+      // write and nobody else's to rewrite (R3.11).
+      if (p.contribution_statement) {
+        li.appendChild(el("p", { class: "prose", text: p.contribution_statement }));
+      }
       li.appendChild(el("p", { class: "headline", text: p.description || "" }));
       li.appendChild(tagList(p.technologies));
+      // R3.20 — offer the playable demo from the profile too, not only from the
+      // project page. externalLink degrades a bad URL to plain text (R3.22).
+      if (p.playable_url) {
+        li.appendChild(el("p", {}, [externalLink("Play demo", p.playable_url)]));
+      }
       list.appendChild(li);
     }
     section.appendChild(list);

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Edit a project — ImmXrsive</title>
+<meta name="description" content="Maintain a shared project: details, repositories, demo links, contributors and roles." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="index.html">ImmXrsive Talent Directory</a>
+    <span class="tag">Algoma University · student and alumni talent</span>
+    <a class="btn" href="my-projects.html">Your projects</a>
+  </div>
+</header>
+
+<main id="main">
+  <p class="breadcrumb"><a href="my-projects.html">&larr; Back to your projects</a></p>
+
+  <h1 id="project-title">Project</h1>
+  <p class="lede" id="project-lede"></p>
+
+  <div id="notice" role="alert" aria-live="assertive"></div>
+
+  <section class="panel" id="gate" hidden>
+    <h2 id="gate-title">Not available</h2>
+    <p id="gate-text"></p>
+    <p><a class="btn" href="my-projects.html">Back to your projects</a></p>
+  </section>
+
+  <div id="editor" hidden>
+
+    <!-- Who may change what, said in plain words rather than left to be
+         discovered by a disabled button (R3 usability expectation). -->
+    <section class="panel">
+      <h2>Status</h2>
+      <p id="status-text" role="status"></p>
+      <p id="role-text" class="help"></p>
+      <p id="publish-row" hidden>
+        <button type="button" id="publish-btn">Publish this project</button>
+        <button type="button" id="unpublish-btn" class="secondary">Unpublish</button>
+      </p>
+      <p id="public-link"></p>
+    </section>
+
+    <!-- R3.11, R3.12 — the contributor's own row. Shown to every accepted
+         contributor including the maintainer. -->
+    <form class="panel" id="contribution-form" hidden novalidate>
+      <h2>Your contribution</h2>
+      <p class="help">This is yours. No teammate and no maintainer can change what you write here.</p>
+
+      <label for="contribution_statement">What you did on this project</label>
+      <textarea id="contribution_statement" rows="3" aria-describedby="contribution-help"></textarea>
+      <p class="help" id="contribution-help">Shown next to your name on the public project page and on your profile.</p>
+
+      <ul class="checks">
+        <li>
+          <label>
+            <input type="checkbox" id="featured" />
+            Show this project on my profile
+          </label>
+        </li>
+      </ul>
+      <p class="help">Turning this off removes the project from your own profile. You stay a credited contributor on the project itself.</p>
+
+      <button type="submit" id="contribution-btn">Save my contribution</button>
+    </form>
+
+    <!-- R3.02 — the shared project fields. Editable by the maintainer only. -->
+    <form class="panel" id="shared-form" novalidate>
+      <h2>Project details</h2>
+      <p class="help" id="shared-help"></p>
+
+      <label for="title">Project title</label>
+      <input type="text" id="title" required />
+
+      <label for="description">Short description</label>
+      <textarea id="description" rows="4"></textarea>
+
+      <div class="controls-row">
+        <div>
+          <label for="domain">Domain or type</label>
+          <select id="domain"></select>
+        </div>
+        <div>
+          <label for="date_text">Date or status</label>
+          <input type="text" id="date_text" placeholder="Fall 2026, in progress" />
+        </div>
+      </div>
+
+      <label for="technologies">Project technologies</label>
+      <input type="text" id="technologies" aria-describedby="tech-help" />
+      <p class="help" id="tech-help">Separate with commas. These describe the project and are never added to a contributor's personal skills.</p>
+
+      <label for="homepage">Project homepage (optional)</label>
+      <input type="url" id="homepage" placeholder="https://" />
+
+      <h3>Demo and media</h3>
+      <p class="help">Paste links. We do not accept embed code, so nothing on a public page can run scripts a visitor did not expect.</p>
+
+      <label for="playable_url">Playable web URL</label>
+      <input type="url" id="playable_url" placeholder="https://" aria-describedby="playable-help" />
+      <p class="help" id="playable-help">If you fill this in, the public page offers a Play demo action. Must start with http:// or https://.</p>
+
+      <label for="video_url">Video or recorded demo URL</label>
+      <input type="url" id="video_url" placeholder="https://" />
+
+      <label for="fallback_image_url">Fallback image URL</label>
+      <input type="url" id="fallback_image_url" placeholder="https://" aria-describedby="fallback-help" />
+      <p class="help" id="fallback-help">Shown so the project is still understandable when the interactive demo will not run, including on phones.</p>
+
+      <label for="fallback_note">Fallback note</label>
+      <textarea id="fallback_note" rows="2"></textarea>
+
+      <button type="submit" id="shared-btn">Save project details</button>
+    </form>
+
+    <!-- R3.04 — zero, one or many repositories. -->
+    <section class="panel" id="repos-panel">
+      <h2>Repositories</h2>
+      <p class="help">A project can have none, one, or several. Disconnecting one does not delete the project.</p>
+      <ul class="row-list" id="repositories"></ul>
+      <form id="repo-form" novalidate>
+        <label for="new-repo">Add a repository link</label>
+        <input type="url" id="new-repo" placeholder="https://github.com/owner/name" />
+        <button type="submit" id="repo-btn" class="secondary">Add repository</button>
+      </form>
+    </section>
+
+    <!-- R3.08 to R3.13, R3.15 -->
+    <section class="panel">
+      <h2>Contributors</h2>
+      <p class="help" id="contributors-help"></p>
+      <ul class="row-list" id="contributors"></ul>
+
+      <div id="invite-block" hidden>
+        <h3>Invite a teammate</h3>
+        <form id="invite-form" novalidate>
+          <label for="invite-search">Find a student by name</label>
+          <input type="text" id="invite-search" autocomplete="off" aria-describedby="invite-help" />
+          <p class="help" id="invite-help">They must already have an account here. They are not shown publicly until they accept.</p>
+          <ul class="row-list" id="invite-results"></ul>
+
+          <label for="invite-role">Role you are proposing</label>
+          <select id="invite-role"></select>
+
+          <button type="submit" id="invite-btn">Send invitation</button>
+        </form>
+      </div>
+
+      <div id="transfer-block" hidden>
+        <h3>Transfer maintenance</h3>
+        <p class="help">The new maintainer takes over the project's shared details. The project keeps the same public address, and every contributor stays in place.</p>
+        <form id="transfer-form" novalidate>
+          <label for="transfer-to">Hand maintenance to</label>
+          <select id="transfer-to"></select>
+          <button type="submit" id="transfer-btn" class="secondary">Transfer maintenance</button>
+        </form>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    <p class="meta">ImmXrsive · Algoma University. Student profiles are maintained by students.</p>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="project-edit.js"></script>
+</body>
+</html>

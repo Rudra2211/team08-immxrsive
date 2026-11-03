@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Your projects — ImmXrsive</title>
+<meta name="description" content="Add a project, import one from GitHub, invite teammates, and answer invitations." />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="index.html">ImmXrsive Talent Directory</a>
+    <span class="tag">Algoma University · student and alumni talent</span>
+    <a class="btn" href="account.html">Your account</a>
+  </div>
+</header>
+
+<main id="main">
+  <p class="breadcrumb"><a href="account.html">&larr; Back to your account</a></p>
+
+  <h1>Your projects</h1>
+  <p class="lede">Add the work you want employers to see. A project you share with teammates is one record you all point at, not a copy each.</p>
+
+  <div id="notice" role="alert" aria-live="assertive"></div>
+
+  <!-- Signed out, unverified, or no profile yet. -->
+  <section class="panel" id="gate" hidden>
+    <h2 id="gate-title">Sign in first</h2>
+    <p id="gate-text"></p>
+    <p><a class="btn" href="account.html">Go to your account</a></p>
+  </section>
+
+  <div id="main-content" hidden>
+
+    <!-- R3.09 — invitations waiting for an answer. Shown first because
+         somebody else is waiting on this person. -->
+    <section class="panel" id="invitations-panel" hidden>
+      <h2>Invitations waiting for you</h2>
+      <p class="help">You are not shown publicly as a contributor on these until you accept.</p>
+      <ul class="row-list" id="invitations"></ul>
+    </section>
+
+    <section class="panel">
+      <h2>Add a project</h2>
+      <p class="help">You can start from a public GitHub repository, or type everything yourself. Either way you can edit every field before saving.</p>
+
+      <!-- R3.03 — GitHub import proposes values; it never saves anything. -->
+      <form id="import-form" novalidate>
+        <label for="import-url">Import from a public GitHub repository (optional)</label>
+        <input type="url" id="import-url" name="repository" placeholder="https://github.com/owner/name"
+               autocomplete="off" aria-describedby="import-help" />
+        <p class="help" id="import-help">We read the repository's public name, description and languages and suggest them below. Nothing is saved until you choose Save project.</p>
+        <button type="submit" id="import-btn" class="secondary">Fetch suggestions</button>
+      </form>
+
+      <!-- R3.16 — the duplicate warning appears here, above the form, and
+           never blocks or merges anything. -->
+      <div id="duplicate" role="status" aria-live="polite"></div>
+
+      <form id="create-form" novalidate>
+        <label for="title">Project title</label>
+        <input type="text" id="title" name="title" required aria-describedby="title-help" />
+        <p class="help" id="title-help">Required.</p>
+
+        <label for="description">Short description</label>
+        <textarea id="description" name="description" rows="3"></textarea>
+
+        <div class="controls-row">
+          <div>
+            <label for="domain">Domain or type</label>
+            <select id="domain" name="domain"></select>
+          </div>
+          <div>
+            <label for="date_text">Date or status</label>
+            <input type="text" id="date_text" name="date_text" placeholder="Fall 2026, in progress" />
+          </div>
+        </div>
+
+        <label for="technologies">Project technologies</label>
+        <input type="text" id="technologies" name="technologies" aria-describedby="tech-help" />
+        <p class="help" id="tech-help">Separate with commas. These describe the project — they are not added to anyone's personal skills.</p>
+
+        <label for="repository">Repository link (optional)</label>
+        <input type="url" id="repository" name="repository" placeholder="https://github.com/owner/name" />
+        <p class="help">You can add more repositories later, or none at all.</p>
+
+        <label for="role">Your role on this project</label>
+        <select id="role" name="role"></select>
+
+        <button type="submit" id="create-btn">Save project</button>
+        <p class="help">Saved as a private draft. Nothing is public until you publish it from the project's own page.</p>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Projects you maintain</h2>
+      <ul class="row-list" id="maintaining"></ul>
+    </section>
+
+    <section class="panel">
+      <h2>Projects you contribute to</h2>
+      <p class="help">You control your own contribution statement on these, and whether each one appears on your profile.</p>
+      <ul class="row-list" id="contributing"></ul>
+    </section>
+
+  </div>
+</main>
+
+<footer class="site">
+  <div class="inner">
+    <p class="meta">ImmXrsive · Algoma University. Student profiles are maintained by students.</p>
+  </div>
+</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="my-projects.js"></script>
+</body>
+</html>

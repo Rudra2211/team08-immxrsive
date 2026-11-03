@@ -21,6 +21,10 @@ require("./verify").register(app);
 const { publicView } = require("./profile");
 require("./profile").register(app);
 require("./resume").register(app);
+// Registered before the public /api/projects/:id handler below, so the static
+// R3 paths (/api/projects/options, /api/projects/duplicate-check) are matched
+// before ":id" can swallow them.
+require("./projects").register(app);
 
 /** Query params may arrive as ?skill=A&skill=B or ?skill=A,B. Normalise both. */
 function toList(value) {
@@ -35,9 +39,18 @@ function toList(value) {
 app.get("/", (req, res) => {
   res.json({
     service: "team08-immxrsive-backend",
-    release: "R1",
+    release: "R3",
     health: "/health",
-    endpoints: ["/api/students", "/api/students/{id}", "/api/projects", "/api/projects/{id}", "/api/skills"],
+    endpoints: [
+      "/api/students",
+      "/api/students/{id}",
+      "/api/projects",
+      "/api/projects/{id}",
+      "/api/projects/options",
+      "/api/projects/duplicate-check",
+      "/api/skills",
+      "/api/my/projects",
+    ],
   });
 });
 
@@ -129,7 +142,14 @@ app.get("/api/students", async (req, res) => {
                 FROM student_skills ss WHERE ss.student_id = s.id), '{}') AS skills,
       COALESCE((SELECT ARRAY_AGG(sa.value ORDER BY sa.value)
                 FROM student_availability sa WHERE sa.student_id = s.id), '{}') AS availability,
-      (SELECT COUNT(*)::int FROM project_contributors pc WHERE pc.student_id = s.id) AS project_count
+      -- R3.09, R3.12 — count only relationships the student has accepted, not
+      -- removed and chosen to feature, and only on published projects, so the
+      -- directory count matches what the profile page actually lists.
+      (SELECT COUNT(*)::int FROM project_contributors pc
+        JOIN projects p ON p.id = pc.project_id
+        WHERE pc.student_id = s.id AND pc.status = 'accepted'
+          AND pc.removed_at IS NULL AND pc.featured
+          AND p.project_status = 'published') AS project_count
     FROM students s
     WHERE ${where.join("\n      AND ")}
     ORDER BY s.name ASC, s.id ASC`; // stable, deterministic order (R1.10)
@@ -163,13 +183,24 @@ app.get("/api/students/:id", async (req, res) => {
       return res.status(404).json({ error: "Student not found." });
     }
 
+    // R3.09 — an invitation that has not been accepted is never shown here.
+    // R3.12 — the contributor's own featured flag decides whether a project
+    // appears in their portfolio presentation; clearing it hides the project
+    // without destroying the accepted relationship (R3.13).
+    // R3.15 — the contributor's own contribution statement travels with it, so
+    // a visitor can see what this particular student did.
     const projects = await pool.query(
       `SELECT p.id, p.title, p.description, p.domain, pc.role,
+        pc.contribution_statement, p.playable_url, p.video_url, p.fallback_image_url,
         COALESCE((SELECT ARRAY_AGG(pt.technology ORDER BY pt.technology)
                   FROM project_technologies pt WHERE pt.project_id = p.id), '{}') AS technologies
        FROM project_contributors pc
        JOIN projects p ON p.id = pc.project_id
        WHERE pc.student_id = $1
+         AND pc.status = 'accepted'
+         AND pc.removed_at IS NULL
+         AND pc.featured
+         AND p.project_status = 'published'
        ORDER BY p.title ASC, p.id ASC`,
       [id]
     );
@@ -187,13 +218,17 @@ app.get("/api/students/:id", async (req, res) => {
   }
 });
 
+/** Public project list. Drafts are never listed (R3.01). */
 app.get("/api/projects", async (req, res) => {
   try {
     const r = await pool.query(
       `SELECT p.id, p.title, p.description, p.domain, p.links,
+        p.playable_url, p.video_url, p.fallback_image_url, p.fallback_note,
         COALESCE((SELECT ARRAY_AGG(pt.technology ORDER BY pt.technology)
                   FROM project_technologies pt WHERE pt.project_id = p.id), '{}') AS technologies
-       FROM projects p ORDER BY p.title ASC, p.id ASC`
+       FROM projects p
+       WHERE p.project_status = 'published'
+       ORDER BY p.title ASC, p.id ASC`
     );
     res.json(r.rows);
   } catch (err) {
@@ -202,15 +237,22 @@ app.get("/api/projects", async (req, res) => {
   }
 });
 
-/** Project detail with contributors and roles (R1.16, R1.17). */
+/**
+ * Project detail with contributors and roles (R1.16, R1.17) plus the R3
+ * presentation surface. Repositories are a list, because a project may hold
+ * zero, one or many and remains valid either way (R3.04).
+ */
 app.get("/api/projects/:id", async (req, res) => {
   const id = req.params.id;
   try {
     const r = await pool.query(
-      `SELECT p.id, p.title, p.description, p.domain, p.links,
+      `SELECT p.id, p.title, p.description, p.domain, p.links, p.date_text,
+        p.playable_url, p.video_url, p.fallback_image_url, p.fallback_note,
         COALESCE((SELECT ARRAY_AGG(pt.technology ORDER BY pt.technology)
-                  FROM project_technologies pt WHERE pt.project_id = p.id), '{}') AS technologies
-       FROM projects p WHERE p.id = $1`,
+                  FROM project_technologies pt WHERE pt.project_id = p.id), '{}') AS technologies,
+        COALESCE((SELECT ARRAY_AGG(pr.url ORDER BY pr.added_at)
+                  FROM project_repositories pr WHERE pr.project_id = p.id), '{}') AS repositories
+       FROM projects p WHERE p.id = $1 AND p.project_status = 'published'`,
       [id]
     );
     if (r.rowCount === 0) {
@@ -218,12 +260,26 @@ app.get("/api/projects/:id", async (req, res) => {
     }
 
     // Unpublished students are not exposed anywhere public (R1.20).
+    // R3.09 — an invited student who has not accepted is NOT publicly
+    // represented as a contributor; only 'accepted' rows appear.
+    // R3.13 — a soft-removed contributor is hidden publicly but the row and
+    // its history survive and can be restored.
+    // R3.15 — role and the contributor's own statement make each person's
+    // contribution understandable. `featured` is deliberately NOT applied
+    // here: it governs the student's own portfolio (R3.12), while the
+    // canonical project page must still credit everyone who took part.
     const contributors = await pool.query(
-      `SELECT s.id AS student_id, s.name, s.headline, pc.role
+      `SELECT s.id AS student_id, s.name, s.headline, pc.role,
+              pc.contribution_statement,
+              (pc.student_id = p.maintainer_student_id) AS is_maintainer
        FROM project_contributors pc
        JOIN students s ON s.id = pc.student_id
-       WHERE pc.project_id = $1 AND s.profile_status = 'published'
-       ORDER BY s.name ASC, s.id ASC`,
+       JOIN projects p ON p.id = pc.project_id
+       WHERE pc.project_id = $1
+         AND pc.status = 'accepted'
+         AND pc.removed_at IS NULL
+         AND s.profile_status = 'published'
+       ORDER BY is_maintainer DESC, s.name ASC, s.id ASC`,
       [id]
     );
 
