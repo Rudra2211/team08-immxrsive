@@ -213,3 +213,42 @@ function showNotice(container, message, type = "error") {
   container.innerHTML = "";
   container.appendChild(el("div", { class: `notice ${type}`, role: "status", text: message }));
 }
+
+/**
+ * Cards tilt toward the pointer and carry a glare under it. Presentation only:
+ * this sets four CSS variables and a class, and touches nothing else. One
+ * delegated listener covers cards that are rendered after the page loads.
+ * Skipped entirely on touch screens and for anyone who asked for less motion.
+ */
+(function cardTilt() {
+  const fine = window.matchMedia("(hover: hover) and (pointer: fine)");
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
+  if (!fine.matches || calm.matches) return;
+
+  const MAX = 6; // degrees
+  let active = null;
+
+  function reset(card) {
+    card.classList.remove("is-tilting");
+    card.style.setProperty("--rx", "0deg");
+    card.style.setProperty("--ry", "0deg");
+  }
+
+  document.addEventListener("pointermove", (e) => {
+    const card = e.target instanceof Element ? e.target.closest(".card") : null;
+    if (active && active !== card) reset(active);
+    active = card;
+    if (!card) return;
+
+    const r = card.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width;  // 0..1
+    const y = (e.clientY - r.top) / r.height;  // 0..1
+    card.classList.add("is-tilting");
+    card.style.setProperty("--ry", `${((x - 0.5) * 2 * MAX).toFixed(2)}deg`);
+    card.style.setProperty("--rx", `${((0.5 - y) * 2 * MAX).toFixed(2)}deg`);
+    card.style.setProperty("--mx", `${(x * 100).toFixed(1)}%`);
+    card.style.setProperty("--my", `${(y * 100).toFixed(1)}%`);
+  }, { passive: true });
+
+  document.addEventListener("pointerleave", () => { if (active) reset(active); active = null; });
+})();
