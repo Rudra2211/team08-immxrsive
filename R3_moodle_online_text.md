@@ -4,7 +4,7 @@
 **API:** https://team08-r1-backend.onrender.com (root reports `"release":"R3"`)
 **Repository:** https://github.com/Rudra2211/team08-immxrsive
 **Release tag:** R3-submission
-**Commit:** `<FILL IN FULL COMMIT SHA>`
+**Commit:** `9d5b7c14831a32cc9e7caf5b18e1b2b4f0038fa8`
 **Adapter:** evaluation_adapter.json (attached)
 
 **Test access.** No account of ours is needed and we supply no password. Open
@@ -15,7 +15,7 @@ create a profile and open **Your projects**. Algoma runs Google Workspace, so
 the verification code arrives in Gmail; check Spam.
 
 **Shared project for QA.** *ImmXrsive Talent Platform* —
-`<FILL IN THE PUBLIC PROJECT URL>` — maintained by Rudra (Backend Developer)
+`https://team08-r1-frontend.onrender.com/project.html?id=proj_e8af7eb93cb98fd52ce900e9` — maintained by Rudra (Backend Developer)
 with Nihar (Frontend Developer) as an accepted contributor who wrote his own
 contribution statement. Both profiles link to this one record; there is no
 per-contributor copy. The same project carries the playable demo
