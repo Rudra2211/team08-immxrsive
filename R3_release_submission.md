@@ -6,7 +6,7 @@ Project Option: Project 1 — ImmXrsive Talent and Industry Platform
 Deployment: https://team08-r1-frontend.onrender.com
 Repository: https://github.com/Rudra2211/team08-immxrsive
 Release tag: R3-submission
-Commit: `<FILL IN FULL COMMIT SHA>`
+Commit: `9d5b7c14831a32cc9e7caf5b18e1b2b4f0038fa8`
 Adapter: evaluation_adapter.json
 Known issues: see KNOWN_ISSUES.md — the Render free tier sleeps after ~15 minutes
 idle so the first request can take up to a minute; title-similarity duplicate
@@ -78,7 +78,7 @@ state the two decisions R3 explicitly required us to make and record:
 
 ### One shared published project with at least two accepted contributors
 **Project:** *ImmXrsive Talent Platform*
-**Public URL:** `<FILL IN THE PUBLIC PROJECT URL FROM TURN 1>`
+**Public URL:** `https://team08-r1-frontend.onrender.com/project.html?id=proj_e8af7eb93cb98fd52ce900e9`
 Maintainer: Rudra (Backend Developer). Accepted contributor: Nihar (Frontend
 Developer), with his own contribution statement. Both profiles link to this one
 project record — there is no per-contributor copy.
