@@ -4,8 +4,9 @@
  *   STAFF_USERNAME=... STAFF_PASSWORD=... node tests/r4-api.js
  *
  * Covers staff authorization, the four website-import fixtures (R4.07-R4.12),
- * partner records and collaboration visibility (R4.13-R4.18), and the student
- * verification and partner request flows (R4.04-R4.06, R4.19-R4.22).
+ * partner records, duplicate domains, staff-edit preservation and collaboration
+ * visibility (R4.13-R4.19), and the student verification and partner request
+ * flows (R4.04-R4.06, R4.20-R4.24).
  * Rows it creates are prefixed t4_ or named "T4 ...". The import fixtures must
  * be reachable from the backend; locally that needs ALLOW_PRIVATE_IMPORT=true.
  * Run it against a LOCAL test database only: it deletes partners that carry the
@@ -163,9 +164,9 @@ function cookieSid(res) {
 
   const other = imported["company_same_name_other_domain.html"];
   const otherSaved = await api("POST", "/api/staff/companies", { sid: staff, body: { ...other.candidate, import_id: other.import_id } });
-  check("R4.13 a similar name on another domain is not merged or blocked", otherSaved.status === 201 && otherSaved.body.id !== company.id, `status ${otherSaved.status}`);
+  check("R4.14 a similar name on another domain is not merged or blocked", otherSaved.status === 201 && otherSaved.body.id !== company.id, `status ${otherSaved.status}`);
   const dup = await api("POST", "/api/staff/companies", { sid: staff, body: { name: "T4 Copy", website: company.website } });
-  check("R4.13 the same website domain asks for confirmation", dup.status === 409 && dup.body.duplicates.some((d) => d.id === company.id), `status ${dup.status}`);
+  check("R4.14 the same website domain asks for confirmation", dup.status === 409 && dup.body.duplicates.some((d) => d.id === company.id), `status ${dup.status}`);
 
   const edited = await api("PUT", `/api/staff/companies/${company.id}`, { sid: staff, body: { ...normal.candidate, description: "T4 edited description by staff." } });
   check(
@@ -175,11 +176,11 @@ function cookieSid(res) {
   );
   const refresh = await api("POST", "/api/staff/companies/import", { sid: staff, body: { url: `${FIXTURES}/company_normal.html`, company_id: company.id } });
   const afterRefresh = await api("GET", `/api/staff/companies/${company.id}`, { sid: staff });
-  check("R4.11 re-importing does not overwrite saved fields", refresh.status === 200 && afterRefresh.body.description === "T4 edited description by staff.");
+  check("R4.13 re-importing does not overwrite saved fields", refresh.status === 200 && afterRefresh.body.description === "T4 edited description by staff.");
 
   // --- R4.14-R4.18 publish and collaborations -------------------------------------------
   const pubR = await api("POST", `/api/staff/companies/${company.id}/publish`, { sid: staff, body: { publish: true } });
-  check("R4.14 staff can publish a partner", pubR.status === 200, `status ${pubR.status}`);
+  check("R4.09 staff can publish a reviewed partner", pubR.status === 200, `status ${pubR.status}`);
 
   const created = await api("POST", "/api/my/projects", {
     sid: a.sid,
@@ -194,7 +195,7 @@ function cookieSid(res) {
   const current = await mk({ title: "T4 Current Work", start_year: 2026, status: "current", visibility: "public", description: "Maintenance study." });
   check("R4.16 add a current collaboration", [200, 201].includes(current.status), `status ${current.status}`);
   const limitedNoSummary = await mk({ title: "T4 Limited", start_year: 2026, status: "current", visibility: "limited" });
-  check("R4.17 limited visibility requires a public summary", limitedNoSummary.status === 400, `status ${limitedNoSummary.status}`);
+  check("R4.18 limited visibility requires a public summary", limitedNoSummary.status === 400, `status ${limitedNoSummary.status}`);
   await mk({ title: "T4 Secret Limited Title", start_year: 2026, status: "current", visibility: "limited", public_summary: "T4 confidential prototype", description: "T4 hidden detail" });
   await mk({ title: "T4 Private Work", start_year: 2026, status: "current", visibility: "private", description: "T4 private detail" });
   const badYears = await mk({ title: "T4 Bad Years", start_year: 2027, end_year: 2025, status: "past", visibility: "public" });
@@ -202,13 +203,13 @@ function cookieSid(res) {
 
   const pubDetail = await api("GET", `/api/partners/${company.id}`);
   const text = JSON.stringify(pubDetail.body);
-  check("R4.18 public partner page shows public collaborations", pubDetail.status === 200 && text.includes("T4 Past Work") && text.includes("T4 Current Work"));
-  check("R4.18 private collaborations never reach the public API", !text.includes("T4 Private Work") && !text.includes("T4 private detail"));
-  check("R4.18 limited collaborations show only the summary", text.includes("T4 confidential prototype") && !text.includes("T4 Secret Limited Title") && !text.includes("T4 hidden detail"));
+  check("R4.22 public partner page shows public collaborations", pubDetail.status === 200 && text.includes("T4 Past Work") && text.includes("T4 Current Work"));
+  check("R4.19 private collaborations never reach the public API", !text.includes("T4 Private Work") && !text.includes("T4 private detail"));
+  check("R4.19 limited collaborations show only the summary", text.includes("T4 confidential prototype") && !text.includes("T4 Secret Limited Title") && !text.includes("T4 hidden detail"));
   const listed = (await api("GET", "/api/partners")).body.find((c) => c.id === company.id);
-  check("R4.16 a partner with current work is listed as current", Boolean(listed) && listed.relationship === "current");
+  check("R4.23 a partner with current work is listed as current", Boolean(listed) && listed.relationship === "current");
   const draftDetail = await api("GET", `/api/partners/${injSaved.body.id}`);
-  check("R4.14 a draft partner page is not public", draftDetail.status === 404, `status ${draftDetail.status}`);
+  check("R4.09 a draft partner page is not public", draftDetail.status === 404, `status ${draftDetail.status}`);
 
   // --- R4.04-R4.06 verification requests --------------------------------------------------
   const inv = await api("POST", `/api/my/projects/${project.id}/invite`, { sid: a.sid, body: { student_id: b.studentId, role: "3D Artist" } });
@@ -245,15 +246,15 @@ function cookieSid(res) {
   // --- R4.19-R4.22 partner requests ---------------------------------------------------------
   const opts = await api("GET", "/api/companies/options", { sid: a.sid });
   check(
-    "R4.19 students can only pick published partners",
+    "R4.20 students can only pick published partners",
     opts.status === 200 && opts.body.some((c) => c.id === company.id) && !opts.body.some((c) => c.id === injSaved.body.id)
   );
   const preq = await api("POST", `/api/my/projects/${project.id}/partner-requests`, { sid: a.sid, body: { company_id: company.id, explanation: "They supplied the training scenario." } });
-  check("R4.19 maintainer requests a partner link", [200, 201].includes(preq.status), `status ${preq.status}`);
+  check("R4.20 maintainer requests a partner link", [200, 201].includes(preq.status), `status ${preq.status}`);
   const preqDup = await api("POST", `/api/my/projects/${project.id}/partner-requests`, { sid: a.sid, body: { company_id: company.id, explanation: "They supplied the training scenario." } });
-  check("R4.19 a duplicate pending partner request is refused", preqDup.status === 409, `status ${preqDup.status}`);
+  check("R4.20 a duplicate pending partner request is refused", preqDup.status === 409, `status ${preqDup.status}`);
   const byB = await api("POST", `/api/my/projects/${project.id}/partner-requests`, { sid: b.sid, body: { company_id: company.id, explanation: "They supplied the training scenario." } });
-  check("R4.19 a non-maintainer cannot request a partner link", byB.status === 403, `status ${byB.status}`);
+  check("R4.20 a non-maintainer cannot request a partner link", byB.status === 403, `status ${byB.status}`);
   const suggest = await api("POST", `/api/my/projects/${project.id}/partner-requests`, { sid: a.sid, body: { suggested_name: "T4 Suggested Co", suggested_website: "https://t4-suggested.example", explanation: "A local studio we demoed for." } });
   check("R4.20 maintainer can suggest a company not yet listed", [200, 201].includes(suggest.status), `status ${suggest.status}`);
   pubProject = await api("GET", `/api/projects/${project.id}`);
@@ -268,10 +269,10 @@ function cookieSid(res) {
   const rj = await api("POST", `/api/staff/partner-requests/${suggested.id}/decision`, { sid: staff, body: { decision: "reject", note: "We could not confirm this company." } });
   check("R4.21 staff can reject with a note", rj.status === 200, `status ${rj.status}`);
   pubProject = await api("GET", `/api/projects/${project.id}`);
-  check("R4.22 the approved partner shows on the project page", (pubProject.body.partners || []).some((c) => c.id === company.id));
-  check("R4.22 the rejected suggestion does not", !(pubProject.body.partners || []).some((c) => c.name === "T4 Suggested Co"));
+  check("R4.21 the approved partner shows on the project page", (pubProject.body.partners || []).some((c) => c.id === company.id));
+  check("R4.21 the rejected suggestion does not", !(pubProject.body.partners || []).some((c) => c.name === "T4 Suggested Co"));
   const partnerPage = await api("GET", `/api/partners/${company.id}`);
-  check("R4.22 the partner page lists the project", JSON.stringify(partnerPage.body).includes(project.id));
+  check("R4.17 the partner page lists the project", JSON.stringify(partnerPage.body).includes(project.id));
 
   // --- R4.24 inquiry from a partner page -------------------------------------------------------
   const inq = await api("POST", "/api/inquiries", {
