@@ -252,3 +252,67 @@ function showNotice(container, message, type = "error") {
 
   document.addEventListener("pointerleave", () => { if (active) reset(active); active = null; });
 })();
+
+/**
+ * Scroll reveal and pointer spotlight. Presentation only: adds classes and two
+ * CSS variables, never touches content or behaviour. Elements are hidden only
+ * after this runs (html.reveal-ready), so without JavaScript, or for anyone
+ * who asked for less motion, every element is simply visible. A watchdog
+ * reveals anything still hidden after 2.5s, so content can never stay invisible.
+ */
+(function motion() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (!("IntersectionObserver" in window)) return;
+
+  const SEL = ".card, main .panel, .row-list li, main h2";
+  const root = document.documentElement;
+
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      e.target.classList.add("is-in");
+      io.unobserve(e.target);
+    }
+  }, { rootMargin: "0px 0px -40px 0px", threshold: 0 });
+
+  function watch(node) {
+    if (!(node instanceof Element) || node.dataset.revealed) return;
+    node.dataset.revealed = "1";
+    // Stagger siblings in the same list so a grid of cards cascades in.
+    const siblings = node.parentElement ? [...node.parentElement.children] : [];
+    node.style.setProperty("--i", String(Math.max(0, siblings.indexOf(node))));
+    io.observe(node);
+  }
+  function scan(scope) {
+    if (scope instanceof Element && scope.matches(SEL)) watch(scope);
+    if (scope.querySelectorAll) scope.querySelectorAll(SEL).forEach(watch);
+  }
+
+  root.classList.add("reveal-ready");
+  scan(document);
+  new MutationObserver((muts) => {
+    for (const m of muts) m.addedNodes.forEach(scan);
+  }).observe(document.body, { childList: true, subtree: true });
+
+  setInterval(() => {
+    document.querySelectorAll("[data-revealed]:not(.is-in)").forEach((n) => {
+      const r = n.getBoundingClientRect();
+      if (r.top < innerHeight && r.bottom > 0) n.classList.add("is-in");
+    });
+  }, 2500);
+
+  // A faint glow follows the pointer across the night sky (desktop only).
+  if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    root.classList.add("has-spotlight");
+    let raf = 0, px = 0, py = 0;
+    document.addEventListener("pointermove", (e) => {
+      px = e.clientX; py = e.clientY;
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        root.style.setProperty("--px", `${px}px`);
+        root.style.setProperty("--py", `${py}px`);
+      });
+    }, { passive: true });
+  }
+})();
