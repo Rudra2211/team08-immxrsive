@@ -1,12 +1,12 @@
 {
-  "release": "R3",
+  "release": "R4",
   "deployment_url": "https://team08-r1-frontend.onrender.com",
   "api_base_url": "https://team08-r1-backend.onrender.com",
   "repository": "https://github.com/Rudra2211/team08-immxrsive",
-  "release_tag": "R3-submission",
+  "release_tag": "R4-submission",
   "team": "Team 08",
   "project_option": "Project 1 - ImmXrsive Talent and Industry Platform",
-  "notes": "Routes are grouped: /api/* is public, /api/my/* requires a signed-in verified student and resolves ownership server-side from the session. Describing a check here does not claim it passes; it tells a reviewer where to reproduce it.",
+  "notes": "Release 4 requirements were not published in the Project 1 book or the Release 4 section of Moodle as of Mon Nov 16 2026 15:35 Toronto time (the book ends at '7. Release 3 - Peer QA Test Plan' and there is no Release 4 fixtures folder). This R4 freeze is therefore the cumulative R1-R3 product, unchanged in behaviour; the checks below are the published R3.01-R3.27 mappings, which also exercise R1/R2 as regression. Routes are grouped: /api/* is public, /api/my/* requires a signed-in verified student and resolves ownership server-side from the session. Describing a check here does not claim it passes; it tells a reviewer where to reproduce it.",
   "checks": [
     {
       "requirement_or_scenario": "R3.01",
