@@ -36,6 +36,38 @@ function tagList(items, extraClass = "") {
   return ul;
 }
 
+/**
+ * Release 4 — signed-in calls (staff pages, project requests). The session
+ * cookie crosses origins here, so every call sends credentials. Errors carry
+ * the server's own message, which is written for the person using the page.
+ */
+async function apiCall(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    ...opts,
+    body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error || "Something went wrong. Please try again.");
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+function partnerUrl(id) { return `partner.html?id=${encodeURIComponent(id)}`; }
+
+/** "2025", "2025–2026" or "Since 2026" for a collaboration's years. */
+function yearRange(start, end, status) {
+  if (!start) return "";
+  if (end && end !== start) return `${start}–${end}`;
+  if (!end && status === "current") return `Since ${start}`;
+  return String(start);
+}
+
 function studentUrl(id) { return `student.html?id=${encodeURIComponent(id)}`; }
 function projectUrl(id) { return `project.html?id=${encodeURIComponent(id)}`; }
 function inquiryUrl(type, id, name) {

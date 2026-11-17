@@ -83,6 +83,10 @@ function render(p) {
   root.innerHTML = "";
 
   root.appendChild(el("h1", { text: p.title }));
+  // R4.06 — only staff approval sets this; students cannot mark themselves verified.
+  if (p.verified) {
+    root.appendChild(el("p", {}, [el("span", { class: "badge verified", text: "Verified by ImmXrsive" })]));
+  }
   if (p.domain) root.appendChild(el("p", { class: "lede", text: p.domain }));
 
   const panel = el("div", { class: "panel" });
@@ -119,6 +123,13 @@ function render(p) {
   panel.appendChild(el("p", {}, [
     el("a", { class: "btn", href: inquiryUrl("project", p.id, p.title), text: "Enquire about this project" }),
   ]));
+  // R4.22 — only staff-approved links to published partners reach this list.
+  if (p.partners && p.partners.length) {
+    panel.appendChild(el("h2", { text: "Industry partners" }));
+    const ul = el("ul", { class: "tags" });
+    p.partners.forEach((c) => ul.appendChild(el("li", {}, [el("a", { href: partnerUrl(c.id), text: c.name })])));
+    panel.appendChild(ul);
+  }
   root.appendChild(panel);
 
   root.appendChild(demoSection(p));

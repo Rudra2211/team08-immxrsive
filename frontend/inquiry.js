@@ -12,9 +12,11 @@ const submitBtn = document.getElementById("submit-btn");
 const sourceType = qs("source_type");
 const sourceId = qs("source_id");
 let sourceName = qs("source_name") || "";
+// A collaboration inquiry carries its partner so the link back goes to the partner page.
+const partnerId = qs("partner_id");
 
 function sourceUrlFor(type, id) {
-  const page = type === "project" ? projectUrl(id) : studentUrl(id);
+  const page = type === "project" ? projectUrl(id) : type === "student" ? studentUrl(id) : partnerUrl(partnerId || id);
   return new URL(page, window.location.href).toString();
 }
 
@@ -25,7 +27,7 @@ function renderContextError(message) {
 }
 
 async function loadContext() {
-  if (!sourceType || !sourceId || !["student", "project"].includes(sourceType)) {
+  if (!sourceType || !sourceId || !["student", "project", "partner", "collaboration"].includes(sourceType)) {
     renderContextError("This inquiry link is missing its context. Please open an inquiry from a student profile or a project page.");
     return false;
   }
@@ -39,6 +41,18 @@ async function loadContext() {
       summary.appendChild(document.createTextNode(` — ${s.headline || "Student profile"} (${sourceId})`));
       breadcrumb.innerHTML = "";
       breadcrumb.appendChild(el("a", { href: studentUrl(sourceId), text: `← Back to ${s.name}'s profile` }));
+    } else if (sourceType === "partner" || sourceType === "collaboration") {
+      const companyId = sourceType === "partner" ? sourceId : partnerId;
+      if (!companyId) throw Object.assign(new Error("missing partner"), { notFound: true });
+      const c = await apiGet(`/api/partners/${encodeURIComponent(companyId)}`);
+      const collab = sourceType === "collaboration" ? (c.collaborations || []).find((x) => x.id === sourceId) : null;
+      if (sourceType === "collaboration" && !collab) throw Object.assign(new Error("missing collaboration"), { notFound: true });
+      sourceName = collab ? `${collab.title || collab.summary} (with ${c.name})` : c.name;
+      summary.textContent = "";
+      summary.appendChild(el("strong", { text: sourceName }));
+      summary.appendChild(document.createTextNode(collab ? " — collaboration" : " — industry partner"));
+      breadcrumb.innerHTML = "";
+      breadcrumb.appendChild(el("a", { href: partnerUrl(c.id), text: `← Back to ${c.name}` }));
     } else {
       const p = await apiGet(`/api/projects/${encodeURIComponent(sourceId)}`);
       sourceName = p.title;

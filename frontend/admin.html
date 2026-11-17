@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Staff Home — ImmXrsive</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="admin.html">ImmXrsive Staff</a>
+    <span class="tag" id="who">Staff workspace</span>
+    <button type="button" class="btn secondary" id="signout-btn">Sign out</button>
+  </div>
+</header>
+<main id="main">
+  <h1>What needs your attention</h1>
+  <p class="lede">Review student requests, check imported partner details, and publish industry partners.</p>
+  <div id="notice" role="alert" aria-live="assertive"></div>
+
+  <div id="workspace" hidden>
+    <section class="panel" aria-labelledby="verify-h">
+      <h2 id="verify-h">Verify projects <span class="count" id="verify-count"></span></h2>
+      <p class="help">Students asking for their project to be marked as officially verified by ImmXrsive.</p>
+      <ul class="row-list" id="verify-list"></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="requests-h">
+      <h2 id="requests-h">Review partner requests <span class="count" id="requests-count"></span></h2>
+      <p class="help">Students saying their project worked with a company. Nothing appears publicly until you approve it.</p>
+      <ul class="row-list" id="requests-list"></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="drafts-h">
+      <h2 id="drafts-h">Review partner drafts <span class="count" id="drafts-count"></span></h2>
+      <p class="help">Partners that are not public yet — including ones imported from a website. Check the details, then publish.</p>
+      <ul class="row-list" id="drafts-list"></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="partners-h">
+      <h2 id="partners-h">Industry partners</h2>
+      <p><a class="btn" href="admin-partner.html?new=1">Add a partner</a></p>
+      <ul class="row-list" id="partners-list"></ul>
+    </section>
+  </div>
+
+  <!-- Review dialogs render here, in the page flow, so they work on any screen. -->
+  <section class="panel" id="review" hidden tabindex="-1" aria-live="polite"></section>
+</main>
+<footer class="site"><div class="inner">COSC-3506 Team 08 · Release 4 · <a href="partners.html">Public partner pages</a></div></footer>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

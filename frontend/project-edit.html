@@ -162,6 +162,40 @@
       </div>
     </section>
 
+    <!-- R4.04, R4.19, R4.20 — requests that staff review; nothing here is public until approved. -->
+    <section class="panel" id="official-panel" hidden>
+      <h2>Verification and industry partners</h2>
+      <p class="help" id="official-help"></p>
+      <h3>Official verification</h3>
+      <p id="verify-status" role="status"></p>
+      <ul class="row-list" id="verify-history"></ul>
+      <form id="verify-form" novalidate hidden>
+        <label for="verify-note">Why should ImmXrsive verify this project?</label>
+        <textarea id="verify-note" rows="2" aria-describedby="verify-note-help"></textarea>
+        <p class="help" id="verify-note-help">For example: the course, supervisor or event it was built for. At least 10 characters.</p>
+        <label for="verify-evidence">Supporting link (optional)</label>
+        <input type="url" id="verify-evidence" placeholder="https://" />
+        <button type="submit" id="verify-btn">Request official verification</button>
+      </form>
+
+      <h3>Industry partners</h3>
+      <ul class="row-list" id="partner-history"></ul>
+      <form id="partner-form" novalidate hidden>
+        <label for="partner-company">Which company did you work with?</label>
+        <select id="partner-company"></select>
+        <div id="partner-suggest" hidden>
+          <label for="partner-name">Company name</label>
+          <input type="text" id="partner-name" />
+          <label for="partner-website">Company website</label>
+          <input type="url" id="partner-website" placeholder="https://" />
+        </div>
+        <label for="partner-explanation">How did the project work with them?</label>
+        <textarea id="partner-explanation" rows="2"></textarea>
+        <p class="help">Staff check this before the company is shown on your project page.</p>
+        <button type="submit" id="partner-btn">Add industry partner</button>
+      </form>
+    </section>
+
   </div>
 </main>
 
@@ -174,5 +208,6 @@
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script src="project-edit.js"></script>
+<script src="project-requests.js"></script>
 </body>
 </html>

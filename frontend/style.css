@@ -378,6 +378,14 @@ button:disabled { opacity: 0.55; cursor: wait; transform: none; filter: saturate
   box-shadow: 0 0 10px var(--brand); animation: pulse 2.4s ease-in-out infinite;
 }
 @keyframes pulse { 50% { opacity: 0.35; transform: scale(0.8); } }
+/* Buttons and panels set their own display; the hidden attribute must still win. */
+[hidden] { display: none !important; }
+/* R4: a past partner is calm (no pulse); a verified project gets a steady mark. */
+.badge.past { background: transparent; border-color: var(--line); color: var(--muted); }
+.badge.past::before { background: var(--muted); box-shadow: none; animation: none; }
+.badge.verified::before { animation: none; box-shadow: none; }
+.count { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.card-title { font-size: 1.15rem; margin: 0; }
 
 dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.2rem; margin: 0.3rem 0 0; }
 dl.facts dt { font-weight: 700; color: var(--muted); }

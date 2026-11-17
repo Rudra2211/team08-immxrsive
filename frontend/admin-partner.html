@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Partner — ImmXrsive Staff</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="admin.html">ImmXrsive Staff</a>
+    <span class="tag" id="who">Staff workspace</span>
+    <a class="btn secondary" href="admin.html">Back to the work queue</a>
+  </div>
+</header>
+<main id="main">
+  <p class="breadcrumb"><a href="admin.html">&larr; Work queue</a></p>
+  <h1 id="page-title">Partner</h1>
+  <div id="notice" role="alert" aria-live="assertive"></div>
+
+  <!-- Add a partner: import from a website, or type the details. -->
+  <section class="panel" id="import-panel" hidden>
+    <h2 id="import-heading">Get details from the company's website</h2>
+    <p class="help" id="import-help">Paste the company's website address. We read the page and fill in what we can. Nothing is saved or made public until you review it and press Save.</p>
+    <form id="import-form" novalidate>
+      <label for="import-url">Website address</label>
+      <input type="url" id="import-url" placeholder="https://company.example" />
+      <p><button type="submit" id="import-btn">Get details</button>
+        <button type="button" class="secondary" id="manual-btn">Enter details manually instead</button></p>
+    </form>
+    <div id="import-result" aria-live="polite"></div>
+  </section>
+
+  <section class="panel" id="status-panel" hidden>
+    <h2>Public page</h2>
+    <p id="status-text" role="status"></p>
+    <p><button type="button" id="publish-btn">Publish this partner</button>
+      <button type="button" class="secondary" id="unpublish-btn">Hide from the public site</button></p>
+    <p id="public-link"></p>
+  </section>
+
+  <form class="panel" id="details-form" novalidate hidden>
+    <h2>Partner details</h2>
+    <p class="help">Everything here is shown to the public once the partner is published. The note under each field says where its current value came from.</p>
+    <label for="f-name">Company name</label>
+    <input type="text" id="f-name" required />
+    <p class="help source" data-for="name"></p>
+    <label for="f-website">Website</label>
+    <input type="url" id="f-website" placeholder="https://" />
+    <p class="help source" data-for="website"></p>
+    <label for="f-description">Short description</label>
+    <textarea id="f-description" rows="3"></textarea>
+    <p class="help source" data-for="description"></p>
+    <div class="controls-row">
+      <div>
+        <label for="f-sector">Sector</label>
+        <input type="text" id="f-sector" placeholder="Immersive technology (XR)" />
+        <p class="help source" data-for="sector"></p>
+      </div>
+      <div>
+        <label for="f-location">Location</label>
+        <input type="text" id="f-location" placeholder="City, Province" />
+        <p class="help source" data-for="location"></p>
+      </div>
+    </div>
+    <label for="f-keywords">Keywords</label>
+    <input type="text" id="f-keywords" placeholder="simulation, XR, training" aria-describedby="kw-help" />
+    <p class="help" id="kw-help">Separate with commas.</p>
+    <p class="help source" data-for="keywords"></p>
+    <p><button type="submit" id="save-btn">Save draft</button></p>
+  </form>
+
+  <section class="panel" id="refresh-panel" hidden>
+    <h2>Check the website for changes</h2>
+    <p class="help">Reads the website again and shows you what is different. Your saved values stay as they are unless you choose to use the website's version.</p>
+    <form id="refresh-form" novalidate>
+      <label for="refresh-url">Website address</label>
+      <input type="url" id="refresh-url" />
+      <p><button type="submit" class="secondary" id="refresh-btn">Check for changes</button></p>
+    </form>
+    <div id="refresh-result" aria-live="polite"></div>
+  </section>
+
+  <section class="panel" id="collab-panel" hidden>
+    <h2>Collaborations</h2>
+    <p class="help">Each piece of work ImmXrsive did with this partner. A partner can have many, over different years.</p>
+    <ul class="row-list" id="collab-list"></ul>
+    <p><button type="button" id="add-collab-btn">Add a collaboration</button></p>
+    <form id="collab-form" novalidate hidden>
+      <h3 id="collab-form-title">Add a collaboration</h3>
+      <label for="c-title">Title</label>
+      <input type="text" id="c-title" required />
+      <div class="controls-row">
+        <div>
+          <label for="c-start">Start year</label>
+          <input type="number" id="c-start" min="1990" max="2100" placeholder="2025" />
+        </div>
+        <div>
+          <label for="c-end">End year (leave empty if ongoing or one year)</label>
+          <input type="number" id="c-end" min="1990" max="2100" />
+        </div>
+      </div>
+      <fieldset>
+        <legend>Is this happening now?</legend>
+        <div class="checks">
+          <label><input type="radio" name="c-status" value="current" checked /> Current — working together now</label>
+          <label><input type="radio" name="c-status" value="past" /> Past — finished</label>
+        </div>
+      </fieldset>
+      <label for="c-visibility">Who can see it</label>
+      <select id="c-visibility">
+        <option value="public">Public — show everything below</option>
+        <option value="limited">Limited — show only a short summary and the years</option>
+        <option value="private">Private — staff only, never shown publicly</option>
+      </select>
+      <div id="c-summary-row" hidden>
+        <label for="c-summary">Public summary (all that visitors will see)</label>
+        <input type="text" id="c-summary" placeholder="A confidential prototype for a regional partner" />
+      </div>
+      <label for="c-description">What we did together</label>
+      <textarea id="c-description" rows="3"></textarea>
+      <label for="c-outcome">Outcome or highlight</label>
+      <textarea id="c-outcome" rows="2"></textarea>
+      <fieldset>
+        <legend>Related student projects</legend>
+        <div class="checks" id="c-projects"></div>
+      </fieldset>
+      <fieldset>
+        <legend>Participating students (only published profiles are listed)</legend>
+        <div class="checks" id="c-students"></div>
+      </fieldset>
+      <p><button type="submit" id="collab-save-btn">Save collaboration</button>
+        <button type="button" class="secondary" id="collab-cancel-btn">Cancel</button></p>
+    </form>
+  </section>
+
+  <section class="panel" id="history-panel" hidden>
+    <h2>Where the details came from</h2>
+    <ul class="row-list" id="history-list"></ul>
+  </section>
+</main>
+<footer class="site"><div class="inner">COSC-3506 Team 08 · Release 4</div></footer>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="admin-partner.js"></script>
+</body>
+</html>
