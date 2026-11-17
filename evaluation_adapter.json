@@ -6,8 +6,232 @@
   "release_tag": "R4-submission",
   "team": "Team 08",
   "project_option": "Project 1 - ImmXrsive Talent and Industry Platform",
-  "notes": "Release 4 requirements were not published in the Project 1 book or the Release 4 section of Moodle as of Mon Nov 16 2026 15:35 Toronto time (the book ends at '7. Release 3 - Peer QA Test Plan' and there is no Release 4 fixtures folder). This R4 freeze is therefore the cumulative R1-R3 product, unchanged in behaviour; the checks below are the published R3.01-R3.27 mappings, which also exercise R1/R2 as regression. Routes are grouped: /api/* is public, /api/my/* requires a signed-in verified student and resolves ownership server-side from the session. Describing a check here does not claim it passes; it tells a reviewer where to reproduce it.",
+  "notes": "Release 4 is Core plus the chosen Challenge R4.10 - Untrusted Website Content. R4.13, R4.14 and R4.19 are also implemented but are not the chosen Challenge. Route groups: /api/* is public; /api/my/* needs a signed-in verified student and resolves ownership from the session; /api/staff/* and /auth/staff/login are the staff surface, and every /api/staff/* route returns 401 without a session and 403 for a student session. Staff UI: /staff-login.html, /admin.html (work queue), /admin-partner.html?new=1 (add/import) and /admin-partner.html?id=<company id> (review, publish, collaborations). The R3 checks below are kept as the R4.27 regression set. Describing a check here does not claim it passes; it tells a reviewer where to reproduce it.",
   "checks": [
+    {
+      "requirement_or_scenario": "R4.01",
+      "entry_point": "/staff-login.html and POST /auth/staff/login",
+      "method_or_action": "Sign in with the staff test account; GET /api/me",
+      "role": "staff",
+      "setup": "Staff username/password from release_submission.md and the Moodle submission text",
+      "expected_behavior": "Signs in to /admin.html. GET /api/me returns role 'staff'. A wrong password returns 401 with a plain message; repeated failures are rate limited."
+    },
+    {
+      "requirement_or_scenario": "R4.02",
+      "entry_point": "GET /api/staff/queue, POST /api/staff/companies, POST /api/staff/verifications/{id}/decision, POST /api/staff/partner-requests/{id}/decision",
+      "method_or_action": "Call each staff route signed out, then with an ordinary student session",
+      "role": "public / verified student",
+      "setup": "Any student session (sid cookie)",
+      "expected_behavior": "401 signed out and 403 for a student, whatever id is put in the URL or body. Role is read from the session's user row on the server."
+    },
+    {
+      "requirement_or_scenario": "R4.03",
+      "entry_point": "/admin.html (GET /api/staff/queue)",
+      "method_or_action": "Open the staff home",
+      "role": "staff",
+      "setup": "Signed in as staff",
+      "expected_behavior": "The first screen lists 'Verify projects', 'Review partner requests' and 'Review partner drafts', each with a count and one action button per item ('Verify project', 'Review partner request', 'Review partner'). The live site has one pending verification, one pending partner request and two partner drafts."
+    },
+    {
+      "requirement_or_scenario": "R4.04",
+      "entry_point": "/project-edit.html?id={id} -> POST /api/my/projects/{id}/verification-request",
+      "method_or_action": "As maintainer choose 'Request official verification' with a reason (10+ characters) and an optional link",
+      "role": "project maintainer",
+      "setup": "A project the student maintains",
+      "expected_behavior": "Request is stored as pending and shown as 'Waiting for staff review'. A second pending request returns 409; a non-maintainer contributor gets 403; contributors can see the status."
+    },
+    {
+      "requirement_or_scenario": "R4.05",
+      "entry_point": "/admin.html 'Verify project' (GET /api/staff/verifications/{id}, POST .../decision)",
+      "method_or_action": "Open the request, review project and contributors, approve or reject",
+      "role": "staff",
+      "setup": "A pending verification request",
+      "expected_behavior": "Shows project details, public link, contributors with roles and status, the reason and link. Approve sets the verified marker; reject requires a note that the student sees."
+    },
+    {
+      "requirement_or_scenario": "R4.06",
+      "entry_point": "GET /api/projects/{id}; any /api/my/* route",
+      "method_or_action": "Look for a route a student can use to set verified",
+      "role": "verified student",
+      "setup": "None",
+      "expected_behavior": "Only the staff decision route writes projects.verified_at; no student route accepts a verified field. The public project page shows 'Verified by ImmXrsive' only after approval."
+    },
+    {
+      "requirement_or_scenario": "R4.07",
+      "entry_point": "/admin-partner.html?new=1 'Enter details manually' -> POST /api/staff/companies",
+      "method_or_action": "Fill name, website, description, sector, location, keywords; Save draft",
+      "role": "staff",
+      "setup": "None",
+      "expected_behavior": "A draft partner is created (status draft), not shown publicly."
+    },
+    {
+      "requirement_or_scenario": "R4.08",
+      "entry_point": "/admin-partner.html?new=1 'Get details' -> POST /api/staff/companies/import",
+      "method_or_action": "Paste https://team08-r1-frontend.onrender.com/fixtures/r4/company_normal.html",
+      "role": "staff",
+      "setup": "Fixture URLs listed in release_submission.md",
+      "expected_behavior": "Returns candidate name 'North Shore Simulations', description, website/domain, sector, keywords [simulation, XR, training] and location 'Sault Ste. Marie, Ontario', filled into the form for review. Nothing is saved yet."
+    },
+    {
+      "requirement_or_scenario": "R4.09",
+      "entry_point": "POST /api/staff/companies then POST /api/staff/companies/{id}/publish",
+      "method_or_action": "Save the reviewed import, then Publish",
+      "role": "staff",
+      "setup": "An import result",
+      "expected_behavior": "Saving creates a draft; GET /api/partners and /partner.html do not show it (404) until staff publish. Live example: https://team08-r1-frontend.onrender.com/partner.html?id=co_ec8a3c39c41f596e4701b5ac"
+    },
+    {
+      "requirement_or_scenario": "R4.10 (chosen Challenge)",
+      "entry_point": "POST /api/staff/companies/import with https://team08-r1-frontend.onrender.com/fixtures/r4/company_prompt_injection.html",
+      "method_or_action": "Import, inspect the warning, save, open admin and public pages",
+      "role": "staff",
+      "setup": "None",
+      "expected_behavior": "The instruction-like sentence is returned in flagged_text and shown as ignored; it appears in no field. The company is only ever a draft, is not verified, staff permissions are unchanged, and imported text renders as text (no script runs). Non-http(s), private, loopback and metadata addresses are refused."
+    },
+    {
+      "requirement_or_scenario": "R4.11",
+      "entry_point": "POST /api/staff/companies/import with https://team08-r1-frontend.onrender.com/fixtures/r4/company_sparse.html or https://nonexistent.invalid/",
+      "method_or_action": "Import into a form that already has typed values",
+      "role": "staff",
+      "setup": "None",
+      "expected_behavior": "Sparse page: candidate name 'Algoma Field Systems' with missing fields listed for manual completion. Unreachable page: 422 with fallback 'manual'; the form keeps what was typed, and a saved draft is unchanged."
+    },
+    {
+      "requirement_or_scenario": "R4.12",
+      "entry_point": "/admin-partner.html?id={id} (GET /api/staff/companies/{id})",
+      "method_or_action": "Open a saved imported partner",
+      "role": "staff",
+      "setup": "A partner saved from an import",
+      "expected_behavior": "Each field shows its source: the website URL and import time, or the staff member and edit time. 'Where the details came from' lists every import attempt."
+    },
+    {
+      "requirement_or_scenario": "R4.13 (built, not chosen)",
+      "entry_point": "/admin-partner.html?id={id} 'Check for changes'",
+      "method_or_action": "Edit the description, then check the website again",
+      "role": "staff",
+      "setup": "An imported partner",
+      "expected_behavior": "Differences are listed with the saved value and the website value; nothing changes unless staff tick a field and apply it."
+    },
+    {
+      "requirement_or_scenario": "R4.14 (built, not chosen)",
+      "entry_point": "POST /api/staff/companies",
+      "method_or_action": "Save a partner whose website domain is already used; import company_same_name_other_domain.html",
+      "role": "staff",
+      "setup": "An existing partner with that domain",
+      "expected_behavior": "Same domain: 409 with a link to the existing partner and an explicit 'different organisation' option. 'North Shore Simulation Studio' on another domain is saved as its own record."
+    },
+    {
+      "requirement_or_scenario": "R4.15",
+      "entry_point": "/admin-partner.html?id={id} 'Add a collaboration' -> POST /api/staff/companies/{id}/collaborations",
+      "method_or_action": "Enter title, years, current/past, visibility, description, outcome, projects and students",
+      "role": "staff",
+      "setup": "A partner",
+      "expected_behavior": "Collaboration saved; an end year before the start year is refused."
+    },
+    {
+      "requirement_or_scenario": "R4.16",
+      "entry_point": "GET /api/partners/co_ec8a3c39c41f596e4701b5ac",
+      "method_or_action": "Open North Shore Simulations",
+      "role": "public",
+      "setup": "Live data",
+      "expected_behavior": "One company record with two collaborations: 2025 past and 2026 current."
+    },
+    {
+      "requirement_or_scenario": "R4.17",
+      "entry_point": "collaboration_projects / project_partners via GET /api/partners/{id} and GET /api/projects/{id}",
+      "method_or_action": "Link one collaboration to several projects; approve two partners for one project",
+      "role": "staff",
+      "setup": "None",
+      "expected_behavior": "Collaborations accept any number of project_ids; a project lists every approved partner."
+    },
+    {
+      "requirement_or_scenario": "R4.18",
+      "entry_point": "/partner.html?id=co_8edf6b8214d990b82f9add2b",
+      "method_or_action": "Open in a signed-out window",
+      "role": "public",
+      "setup": "Partner with Private and Limited collaborations",
+      "expected_behavior": "Private collaboration absent; the limited one shows only its public summary and years."
+    },
+    {
+      "requirement_or_scenario": "R4.19 (built, not chosen)",
+      "entry_point": "GET /api/partners/co_8edf6b8214d990b82f9add2b",
+      "method_or_action": "Inspect the JSON",
+      "role": "public",
+      "setup": "Same partner",
+      "expected_behavior": "Private rows are excluded in SQL; limited rows contain only id, visibility, summary, years and status."
+    },
+    {
+      "requirement_or_scenario": "R4.20",
+      "entry_point": "/project-edit.html?id={id} 'Add industry partner' -> POST /api/my/projects/{id}/partner-requests",
+      "method_or_action": "Pick a published partner or 'It is not listed', explain, send",
+      "role": "project maintainer",
+      "setup": "A project the student maintains",
+      "expected_behavior": "Request saved as pending. Only published partners can be picked; non-maintainers get 403; duplicate pending requests get 409."
+    },
+    {
+      "requirement_or_scenario": "R4.21",
+      "entry_point": "GET /api/projects/{id} before and after POST /api/staff/partner-requests/{id}/decision",
+      "method_or_action": "Check the public project, then approve or reject as staff",
+      "role": "staff / public",
+      "setup": "A pending partner request",
+      "expected_behavior": "No partner appears publicly until staff approve; rejected requests never appear. Live example: https://team08-r1-frontend.onrender.com/project.html?id=proj_e8af7eb93cb98fd52ce900e9"
+    },
+    {
+      "requirement_or_scenario": "R4.22",
+      "entry_point": "/partners.html and /partner.html?id=co_ec8a3c39c41f596e4701b5ac",
+      "method_or_action": "Browse as a visitor",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "Plain-language page: who the company is, how ImmXrsive worked with them, current and past collaborations, linked projects and students, website and 'Start a collaboration inquiry'."
+    },
+    {
+      "requirement_or_scenario": "R4.23",
+      "entry_point": "/partners.html",
+      "method_or_action": "Compare partners",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "'Working with us now' for partners with current work, 'Past collaborator' otherwise; past collaborations stay listed."
+    },
+    {
+      "requirement_or_scenario": "R4.24",
+      "entry_point": "/inquiry.html?source_type=partner|collaboration&source_id=...",
+      "method_or_action": "Use 'Start a collaboration inquiry' or 'Ask about work like this'",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "The inquiry form names the partner or collaboration and links back; POST /api/inquiries stores source_type partner or collaboration with the source URL."
+    },
+    {
+      "requirement_or_scenario": "R4.25",
+      "entry_point": "/admin.html -> /admin-partner.html",
+      "method_or_action": "Import, review, publish a partner and add a collaboration without help",
+      "role": "staff",
+      "setup": "Staff test account",
+      "expected_behavior": "Screens use task words (Add a partner, Get details, Save draft, Publish this partner, Add a collaboration) and no table, id or state-machine terms."
+    },
+    {
+      "requirement_or_scenario": "R4.26",
+      "entry_point": "/partners.html, /partner.html, /inquiry.html at 390 CSS px",
+      "method_or_action": "Open on a phone-width viewport",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "Readable and usable with no horizontal scroll. Staff pages work on laptop/tablet widths."
+    },
+    {
+      "requirement_or_scenario": "R4.27",
+      "entry_point": "R1-R3 journeys",
+      "method_or_action": "Run tests/e2e.js, tests/r3-api.js, tests/r3-ui.js",
+      "role": "public / student",
+      "setup": "None",
+      "expected_behavior": "26/26, 50/50 and 27/27 on Nov 17 2026."
+    },
+    {
+      "requirement_or_scenario": "R4.28",
+      "entry_point": "https://github.com/Rudra2211/team08-immxrsive/releases/tag/R4-submission",
+      "method_or_action": "Resolve the tag",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "The tag names the commit recorded in the Moodle submission."
+    },
     {
       "requirement_or_scenario": "R3.01",
       "entry_point": "/my-projects.html",
@@ -225,9 +449,10 @@
       "expected_behavior": "The tag R3-submission exists and names the commit recorded as the assessed version."
     }
   ],
-  "fixture_setup": "The Release 1 fixtures (students.json, skills.json, projects.json) import automatically the first time the backend boots against an empty database, and can be re-imported with `node backend/import.js`. The Release 3 fixtures are used as follows: data/standard_roles.json is the contributor role vocabulary served by GET /api/projects/options and enforced on every invite and role change; project_duplicate_cases.json drives the duplicate-check scenarios above and is asserted verbatim in tests/r3-api.js; working_demo.html and fallback.svg are hosted on our own static site at /demo/working_demo.html and /demo/fallback.svg and used as the playable and fallback URLs of the QA project. The migrations schema.sql, schema_r2.sql and schema_r3.sql run in order on every boot and are idempotent and additive.",
-  "test_access": "A reviewer signs in with their own GitHub account at /account.html and verifies with an @algomau.ca address, which creates a verified student able to add projects. No account of ours is needed and no password or token is required anywhere. For the shared-project checks (R3.05, R3.09, R3.11, R3.15) use the published QA project named in R3_release_submission.md, which already has two accepted contributors. Two reviewers signing in with two GitHub accounts can exercise the whole invite/accept/decline cycle themselves. Any additional setup is supplied through the approved private course channel.",
+  "fixture_setup": "Release 4 company pages are hosted unchanged at https://team08-r1-frontend.onrender.com/fixtures/r4/company_normal.html, company_sparse.html, company_prompt_injection.html and company_same_name_other_domain.html (no instructor URLs were supplied). backend/data/r4/expected_company_imports.json is the acceptance criteria asserted by tests/r4-api.js; backend/data/r4/collaboration_seed.json was entered through the staff UI as the live North Shore Simulations and Superior Immersive Labs collaborations. Earlier fixtures load as before (R1 seeds on first boot; standard_roles.json; project_duplicate_cases.json; demo files at /demo/). Migrations schema.sql to schema_r4.sql run on every boot.",
+  "test_access": "Staff: username immxrsive.staff at https://team08-r1-frontend.onrender.com/staff-login.html; the password is in the Moodle Release 4 Product Result text and the private course channel, never in the repository. Students: reviewers sign in with their own GitHub account at /account.html and verify an @algomau.ca address, then add a project to become its maintainer. Live evidence ids: partner co_ec8a3c39c41f596e4701b5ac (imported, published, two collaborations), partner co_8edf6b8214d990b82f9add2b (private + limited collaborations), project proj_e8af7eb93cb98fd52ce900e9 (approved partner, plus a pending partner request and a pending verification request).",
   "automated_suites": {
+    "tests/r4-api.js": "70 checks over the R4 surface (staff authorization, the four fixture imports, R4.10, drafts, fallback, provenance, duplicate domain, staff-edit preservation, collaborations and visibility, verification and partner requests, partner inquiry). Local test database only: it deletes partners with the fixture names. Needs ALLOW_PRIVATE_IMPORT=true on a local backend so it can fetch the locally served fixtures.",
     "tests/r3-api.js": "50 checks over the R3 route surface: authorization boundaries, the lost-update conflict, invitation visibility, soft-delete and restore, URL rejection, and all three project_duplicate_cases.json rows. Run with DATABASE_URL and BASE_URL set. Cleans up the synthetic students it creates.",
     "tests/r3-ui.js": "27 browser checks over the Add Project, GitHub import, invite, accept, contribution, publish, Play-demo, broken-demo and 390px journeys.",
     "tests/e2e.js": "26 browser checks over the Release 1 requirements, used as the R3.25 regression gate."

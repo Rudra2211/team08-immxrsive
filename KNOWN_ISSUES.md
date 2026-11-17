@@ -19,3 +19,10 @@ Issues 1, 2, 4 and 5 above still apply. Issue 3 was resolved in Release 2.
 | 8 | `project_contributors.role` has no database CHECK constraint, because the Release 1 fixture rows hold free-text roles outside the twelve-value vocabulary. New and updated roles are validated against `standard_roles.json` in the API instead. | None observable — every role set through the product is standardized, and legacy fixture roles display as they always did. | Deliberate. A constraint would have required migrating fixture data and risked an R3.25 regression for no behavioural gain. Tighten when the fixtures are reseeded. |
 | 9 | Only the maintainer can edit shared project fields, so if a maintainer becomes unreachable the other contributors cannot update the shared record themselves — the maintainer has to transfer maintenance. | Minor for this release; no staff/admin override exists, and staff workflows are an explicit R3 non-requirement. | Known limitation of the authorized-editor model we chose and recorded in `RELEASE_NOTES.md`. |
 | 10 | A project's `fallback_image_url` loads from whatever host the student supplies, so a slow third-party host makes the fallback image slow to appear. | Minor — the rest of the page, including the fallback note and all project details, renders immediately and never waits for it. | Accepted; `loading="lazy"` is set and a load failure degrades to a text message. |
+
+## Release 4
+
+- The staff workspace is designed for laptop and tablet widths. It works on a phone but is not optimised for it (R4.26 allows this).
+- A company site with no external link gets its own page address as its website; staff correct it before publishing.
+- Staff accounts are set by environment variables (one test account); there is no staff account management screen.
+- An approved suggestion of a new company becomes an unpublished partner draft; the project shows it only after staff publish it.
