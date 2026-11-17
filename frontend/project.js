@@ -123,7 +123,7 @@ function render(p) {
   panel.appendChild(el("p", {}, [
     el("a", { class: "btn", href: inquiryUrl("project", p.id, p.title), text: "Enquire about this project" }),
   ]));
-  // R4.22 — only staff-approved links to published partners reach this list.
+  // R4.21 — only staff-approved links to published partners reach this list.
   if (p.partners && p.partners.length) {
     panel.appendChild(el("h2", { text: "Industry partners" }));
     const ul = el("ul", { class: "tags" });

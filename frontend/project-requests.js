@@ -1,5 +1,5 @@
 /*
- * Project editor: verification and industry-partner requests (R4.04, R4.19, R4.20).
+ * Project editor: verification and industry-partner requests (R4.04, R4.20, R4.21).
  * The maintainer can ask; every contributor sees the status. Staff decide.
  */
 (async function projectRequests() {
