@@ -67,6 +67,12 @@ async function createSession(userId) {
   return { sid, maxAge: SESSION_DAYS * 86400 };
 }
 
+/** R4.01 — staff sign in with a password, but share the same session table. */
+async function createSessionCookie(userId) {
+  const { sid, maxAge } = await createSession(userId);
+  return sessionCookie(sid, maxAge);
+}
+
 /** Resolves the signed-in user, or null. Never throws on a bad cookie. */
 async function currentUser(req) {
   const sid = readCookie(req, "sid");
@@ -183,6 +189,7 @@ function register(app) {
       );
       res.json({
         signed_in: true,
+        role: user.role || "student",
         github_login: user.github_login,
         verified: Boolean(user.verified_at),
         algoma_email: user.algoma_email || null,
@@ -195,4 +202,4 @@ function register(app) {
   });
 }
 
-module.exports = { register, requireAuth, requireVerified, currentUser, id };
+module.exports = { register, requireAuth, requireVerified, currentUser, id, createSessionCookie };

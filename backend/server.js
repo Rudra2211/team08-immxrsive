@@ -25,6 +25,9 @@ require("./resume").register(app);
 // R3 paths (/api/projects/options, /api/projects/duplicate-check) are matched
 // before ":id" can swallow them.
 require("./projects").register(app);
+// Release 4 — staff operations, industry partners and collaborations.
+const r4 = require("./r4");
+r4.register(app);
 
 /** Query params may arrive as ?skill=A&skill=B or ?skill=A,B. Normalise both. */
 function toList(value) {
@@ -39,7 +42,7 @@ function toList(value) {
 app.get("/", (req, res) => {
   res.json({
     service: "team08-immxrsive-backend",
-    release: "R3",
+    release: "R4",
     health: "/health",
     endpoints: [
       "/api/students",
@@ -50,6 +53,9 @@ app.get("/", (req, res) => {
       "/api/projects/duplicate-check",
       "/api/skills",
       "/api/my/projects",
+      "/api/partners",
+      "/api/partners/{id}",
+      "/api/staff/queue (staff only)",
     ],
   });
 });
@@ -283,7 +289,24 @@ app.get("/api/projects/:id", async (req, res) => {
       [id]
     );
 
-    res.json({ ...r.rows[0], contributors: contributors.rows });
+    // R4.05, R4.21 — the official marker and partner list come only from
+    // staff decisions: verified_at is written by the staff review route alone,
+    // and project_partners holds only staff-approved, published companies.
+    const [verification, partners] = await Promise.all([
+      pool.query("SELECT verified_at FROM projects WHERE id = $1", [id]),
+      pool.query(
+        `SELECT c.id, c.name FROM project_partners pp JOIN companies c ON c.id = pp.company_id
+          WHERE pp.project_id = $1 AND c.status = 'published' ORDER BY c.name`,
+        [id]
+      ),
+    ]);
+
+    res.json({
+      ...r.rows[0],
+      contributors: contributors.rows,
+      verified: Boolean(verification.rows[0] && verification.rows[0].verified_at),
+      partners: partners.rows,
+    });
   } catch (err) {
     console.error("GET /api/projects/:id failed:", err.message);
     res.status(500).json({ error: "Could not load project." });
@@ -302,7 +325,8 @@ app.post("/api/inquiries", async (req, res) => {
   const email = String(b.contact_email || "").trim();
   const description = String(b.description || "").trim();
 
-  if (!["student", "project"].includes(sourceType) || !sourceId) {
+  // R4.24 — an inquiry can also start from a partner or collaboration page.
+  if (!["student", "project", "partner", "collaboration"].includes(sourceType) || !sourceId) {
     return res.status(400).json({ error: "Inquiry context (source_type and source_id) is required." });
   }
   if (!company || !contact || !email || !description) {
@@ -330,6 +354,7 @@ app.post("/api/inquiries", async (req, res) => {
 app.use((req, res) => res.status(404).json({ error: "Not found." }));
 
 initDb()
+  .then(() => r4.ensureStaffAccount())
   .then(async () => {
     if (process.env.SEED_ON_BOOT !== "false") {
       const r = await pool.query("SELECT COUNT(*)::int AS n FROM students");
