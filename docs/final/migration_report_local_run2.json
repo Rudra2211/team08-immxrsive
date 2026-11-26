@@ -1,0 +1,70 @@
+{
+  "format": "legacy",
+  "source_name": "legacy_export.json",
+  "source_counts": {
+    "students": 6,
+    "projects": 3,
+    "companies": 3,
+    "collaborations": 4
+  },
+  "students": {
+    "created": 0,
+    "updated": 0,
+    "skipped": 6,
+    "conflicts": 0
+  },
+  "projects": {
+    "created": 0,
+    "updated": 0,
+    "skipped": 3,
+    "conflicts": 0
+  },
+  "companies": {
+    "created": 0,
+    "updated": 0,
+    "skipped": 3,
+    "conflicts": 0
+  },
+  "collaborations": {
+    "created": 0,
+    "updated": 0,
+    "skipped": 4,
+    "conflicts": 0
+  },
+  "duplicate_student_candidates": [
+    {
+      "legacy_id": "LS04",
+      "possible_duplicate_of": "LS01",
+      "reason": "same email"
+    }
+  ],
+  "duplicate_company_candidates": [
+    {
+      "legacy_id": "LC02",
+      "possible_duplicate_of": "LC01",
+      "reason": "same website domain"
+    }
+  ],
+  "broken_references": [
+    {
+      "project_legacy_id": "LP02",
+      "student_legacy_id": "LS99"
+    }
+  ],
+  "possible_existing_matches": [],
+  "unclaimed_profiles": [
+    "LS02",
+    "LS05",
+    "LS06"
+  ],
+  "awaiting_owner_account": [
+    "LS01",
+    "LS03"
+  ],
+  "stale_availability": [
+    "LS02"
+  ],
+  "issues": [],
+  "run_id": 2,
+  "run_at": "2026-11-26T16:46:43.296Z"
+}
