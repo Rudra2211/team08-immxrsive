@@ -12,8 +12,17 @@ async function apiGet(path) {
     err.notFound = true;
     throw err;
   }
+  // F.18 — a merged, retired or archived record explains where it went.
+  if (res.status === 410) {
+    const err = new Error("gone");
+    err.gone = await res.json().catch(() => ({}));
+    throw err;
+  }
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  return res.json();
+  const total = res.headers.get("X-Total-Count");
+  const data = await res.json();
+  if (total !== null && Array.isArray(data)) data.total = Number(total);
+  return data;
 }
 
 function el(tag, props = {}, children = []) {
@@ -66,6 +75,41 @@ function yearRange(start, end, status) {
   if (end && end !== start) return `${start}–${end}`;
   if (!end && status === "current") return `Since ${start}`;
   return String(start);
+}
+
+/**
+ * F.18 — an old URL for a merged record goes to the surviving record; an
+ * archived one explains itself. Returns true when it handled the response.
+ */
+function handleGone(root, gone, page, label) {
+  if (!gone) return false;
+  if (gone.merged && gone.merged_into) {
+    window.location.replace(`${page}?id=${encodeURIComponent(gone.merged_into)}&merged=1`);
+    return true;
+  }
+  root.innerHTML = "";
+  root.appendChild(el("h1", { text: gone.name || gone.title || label }));
+  root.appendChild(el("div", { class: "notice info", text: gone.message || `This ${label.toLowerCase()} has been archived.` }));
+  root.appendChild(el("p", { class: "help", text: "Shared projects and partner history that mention it are kept." }));
+  root.appendChild(el("p", {}, [el("a", { class: "btn", href: "index.html", text: "Browse the talent directory" })]));
+  return true;
+}
+
+/** Shown on the surviving record after a redirect from a merged one. */
+function mergedNotice(root) {
+  if (qs("merged") !== "1") return;
+  root.prepend(el("div", { class: "notice info", role: "status",
+    text: "The page you followed was combined with this one by ImmXrsive staff, so you have been brought here." }));
+}
+
+/** F.13, F.14 — job-seeking availability is shown only when it is current. */
+function availabilityText(s) {
+  if (s.talent_state === "showcase") return "Showcase Only — not currently seeking opportunities";
+  if (s.talent_state === "needs_reconfirmation") {
+    const d = s.availability_confirmed_at ? new Date(s.availability_confirmed_at).toLocaleDateString() : "never";
+    return `Not recently confirmed (last confirmed: ${d})`;
+  }
+  return (s.availability || []).map(titleCase).join(", ") || "Not stated";
 }
 
 function studentUrl(id) { return `student.html?id=${encodeURIComponent(id)}`; }
@@ -125,9 +169,7 @@ function profileBody(s, options = {}) {
 
   fact("Status", asText(titleCase(s.status || "Not stated")));
   fact("Program", asText(s.program || "Not stated"));
-  if (s.availability) {
-    fact("Availability", asText(s.availability.map(titleCase).join(", ") || "Not stated"));
-  }
+  if (s.availability) fact("Availability", asText(availabilityText(s)));
   if (s.location_text) fact("Location", asText(s.location_text));
   if (s.contact_email) {
     fact("Contact", el("a", { href: `mailto:${s.contact_email}`, text: s.contact_email }));

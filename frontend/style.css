@@ -544,3 +544,10 @@ main h1 + p.lede, main h1 + p { animation: rise 1000ms 140ms var(--ease-out) bot
   ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
   html::before { display: none; }
 }
+
+/* Final Release — staff records page tables and stacked forms. */
+.table-wrap { overflow-x: auto; max-width: 100%; }
+.table-wrap table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+.table-wrap th, .table-wrap td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--line-strong); vertical-align: top; }
+form.stack { display: grid; gap: 0.35rem; max-width: 36rem; }
+.report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.6rem; }

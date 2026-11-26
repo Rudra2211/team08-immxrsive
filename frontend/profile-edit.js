@@ -35,6 +35,7 @@
     draft: "Your profile is a private draft. Nobody else can see it yet.",
     unpublished: "Your profile is unpublished. It is saved, but not in the public directory.",
     published: "Your profile is published and visible in the public directory.",
+    retired: "Your profile is retired (archived). Its page says so, and shared projects still credit you. Publish restores it.",
   };
 
   let opts = null; // /api/profile/options
@@ -103,6 +104,18 @@
     $("status-text").textContent = STATUS_TEXT[profile.profile_status] || "Your profile is saved.";
     $("publish-btn").hidden = profile.profile_status === "published";
     $("unpublish-btn").hidden = profile.profile_status !== "published";
+    $("retire-btn").hidden = profile.profile_status === "retired";
+    $("publish-btn").textContent = profile.profile_status === "retired" ? "Restore and publish my profile" : "Publish my profile";
+    // F.13, F.14 — mode and last-confirmed date are always visible.
+    document.querySelectorAll('input[name="availability_mode"]').forEach((r) => {
+      r.checked = r.value === (profile.availability_mode || "active");
+    });
+    $("confirm_availability").checked = false;
+    const when = profile.availability_confirmed_at ? new Date(profile.availability_confirmed_at).toLocaleDateString() : "never";
+    $("confirmed-text").textContent =
+      profile.talent_state === "needs_reconfirmation"
+        ? `Your availability was last confirmed ${when}. Employers do not see it as current until you reconfirm it and save.`
+        : `Availability last confirmed: ${when}.`;
   }
 
   /* ---- section order (R2.23) ---------------------------------------- */
@@ -248,6 +261,8 @@
       section_order: order,
       links,
       availability: checkedValues($("availability-checks")),
+      availability_mode: (document.querySelector('input[name="availability_mode"]:checked') || {}).value || "active",
+      confirm_availability: $("confirm_availability").checked,
       // R2.12 — a suggestion rides along in skills; the server files anything
       // outside the vocabulary as a suggestion instead of a skill.
       skills: checkedValues($("skill-checks")).concat(suggestion ? [suggestion] : []),
@@ -305,6 +320,7 @@
 
   $("publish-btn").addEventListener("click", (e) => setPublication("/api/profile/publish", e.currentTarget));
   $("unpublish-btn").addEventListener("click", (e) => setPublication("/api/profile/unpublish", e.currentTarget));
+  $("retire-btn").addEventListener("click", (e) => setPublication("/api/profile/retire", e.currentTarget));
 
   /* ---- resume import (R2.13 - R2.17) -------------------------------- */
 

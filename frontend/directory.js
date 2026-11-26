@@ -14,6 +14,7 @@ function currentFilters() {
     skill: Array.from(skillSelect.selectedOptions).map((o) => o.value),
     availability: Array.from(form.querySelectorAll('input[name="availability"]:checked')).map((i) => i.value),
     status: Array.from(form.querySelectorAll('input[name="status"]:checked')).map((i) => i.value),
+    talent: form.querySelector('input[name="talent"]:checked') ? "active" : "",
   };
 }
 
@@ -24,6 +25,7 @@ function filtersToQuery(f) {
   for (const s of f.skill) p.append("skill", s);
   for (const a of f.availability) p.append("availability", a);
   for (const s of f.status) p.append("status", s);
+  if (f.talent) p.set("talent", f.talent);
   return p;
 }
 
@@ -36,6 +38,7 @@ function applyQueryToForm() {
   const status = p.getAll("status");
   form.querySelectorAll('input[name="availability"]').forEach((i) => { i.checked = avail.includes(i.value); });
   form.querySelectorAll('input[name="status"]').forEach((i) => { i.checked = status.includes(i.value); });
+  form.querySelector('input[name="talent"]').checked = p.get("talent") === "active";
 }
 
 function renderActiveFilters(f) {
@@ -45,6 +48,7 @@ function renderActiveFilters(f) {
   for (const s of f.skill) chips.push(`Skill: ${s}`);
   for (const a of f.availability) chips.push(`Availability: ${titleCase(a)}`);
   for (const s of f.status) chips.push(`Status: ${titleCase(s)}`);
+  if (f.talent) chips.push("Active Talent only");
 
   if (chips.length === 0) {
     activeEl.appendChild(el("span", { class: "meta", text: "No filters applied." }));
@@ -63,8 +67,8 @@ function studentCard(s) {
 
   li.appendChild(el("p", { class: "headline", text: s.headline || "" }));
 
-  const availability = (s.availability || []).map(titleCase).join(", ") || "Not stated";
-  li.appendChild(el("p", { class: "meta", text: `${titleCase(s.status)} · Available for: ${availability}` }));
+  const label = s.talent_state === "active" ? "Active Talent · Available for: " : "";
+  li.appendChild(el("p", { class: "meta", text: `${titleCase(s.status)} · ${label}${availabilityText(s)}` }));
 
   li.appendChild(tagList((s.skills || []).slice(0, 6)));
 
@@ -88,18 +92,31 @@ async function loadSkills() {
   }
 }
 
-async function loadStudents() {
+// F.28 — one page at a time, so the first load stays the same size however
+// many students the platform holds.
+const PAGE = 24;
+const moreBtn = document.getElementById("load-more");
+let shown = 0;
+
+async function loadStudents(append = false) {
   const f = currentFilters();
-  renderActiveFilters(f);
+  if (!append) {
+    renderActiveFilters(f);
+    shown = 0;
+  }
   errorEl.innerHTML = "";
-  countEl.textContent = "Loading students…";
+  if (!append) countEl.textContent = "Loading students…";
+  moreBtn.hidden = true;
 
   try {
-    const query = filtersToQuery(f).toString();
-    const data = await apiGet(`/api/students${query ? `?${query}` : ""}`);
-    resultsEl.innerHTML = "";
+    const query = filtersToQuery(f);
+    query.set("limit", String(PAGE));
+    if (shown) query.set("offset", String(shown));
+    const data = await apiGet(`/api/students?${query.toString()}`);
+    const total = Number.isFinite(data.total) ? data.total : data.length;
+    if (!append) resultsEl.innerHTML = "";
 
-    if (data.length === 0) {
+    if (data.length === 0 && !append) {
       countEl.textContent = "No students match these filters.";
       errorEl.appendChild(el("div", {
         class: "notice info",
@@ -108,8 +125,15 @@ async function loadStudents() {
       return;
     }
 
-    countEl.textContent = `${data.length} student${data.length === 1 ? "" : "s"} found.`;
     for (const s of data) resultsEl.appendChild(studentCard(s));
+    shown += data.length;
+    countEl.textContent = `${total} student${total === 1 ? "" : "s"} found${shown < total ? ` — showing ${shown}` : ""}.`;
+    moreBtn.hidden = shown >= total;
+    if (append && data[0]) {
+      // Keyboard users continue from the first new result.
+      const first = resultsEl.children[shown - data.length].querySelector("a");
+      if (first) first.focus();
+    }
   } catch (err) {
     console.error(err);
     resultsEl.innerHTML = "";
@@ -117,6 +141,8 @@ async function loadStudents() {
     showNotice(errorEl, "Could not load the directory right now. The service may still be starting up — please retry in a moment.");
   }
 }
+
+moreBtn.addEventListener("click", () => loadStudents(true));
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();

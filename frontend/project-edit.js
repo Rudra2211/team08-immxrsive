@@ -102,13 +102,15 @@
     $("video_url").value = p.video_url || "";
     $("fallback_image_url").value = p.fallback_image_url || "";
     $("fallback_note").value = p.fallback_note || "";
+    $("demo_status").value = p.demo_status || "available";
+    $("demo_status_note").value = p.demo_status_note || "";
 
     // A contributor who is not the maintainer sees the real values, read-only,
     // instead of an empty or hidden panel (R3.05 — one shared record).
     const readOnly = !p.is_maintainer;
     for (const id of [
       "title", "description", "domain", "date_text", "technologies", "homepage",
-      "playable_url", "video_url", "fallback_image_url", "fallback_note",
+      "playable_url", "video_url", "fallback_image_url", "fallback_note", "demo_status", "demo_status_note",
     ]) {
       $(id).disabled = readOnly;
     }
@@ -285,6 +287,8 @@
           video_url: $("video_url").value,
           fallback_image_url: $("fallback_image_url").value,
           fallback_note: $("fallback_note").value,
+          demo_status: $("demo_status").value,
+          demo_status_note: $("demo_status_note").value,
         }),
       });
       say("Project details saved.", "success");

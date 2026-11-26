@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Records and Recovery — ImmXrsive Staff</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
+<header class="site">
+  <div class="inner">
+    <a class="brand" href="admin.html">ImmXrsive Staff</a>
+    <span class="tag" id="who">Staff workspace</span>
+  </div>
+</header>
+<main id="main">
+  <p class="breadcrumb"><a href="admin.html">&larr; Back to the work queue</a></p>
+  <h1>Records, claims and recovery</h1>
+  <p class="lede">Bring in the old site's data, settle who owns which profile, and repair duplicates without losing history. Nothing on this page deletes a record.</p>
+  <div id="notice" role="alert" aria-live="assertive"></div>
+
+  <div id="workspace" hidden>
+    <nav class="panel" aria-label="Sections on this page">
+      <ul class="tags">
+        <li><a href="#claims-h">Profile claims</a></li>
+        <li><a href="#import-h">Import legacy data</a></li>
+        <li><a href="#profiles-h">Profiles</a></li>
+        <li><a href="#partners-h">Duplicate partners</a></li>
+        <li><a href="#projects-h">Project maintainers</a></li>
+        <li><a href="#diag-h">Diagnostics</a></li>
+      </ul>
+    </nav>
+
+    <section class="panel" aria-labelledby="claims-h">
+      <h2 id="claims-h">Profile claims <span class="count" id="claims-count"></span></h2>
+      <p class="help">A student asked to own a profile moved from the old site. Approve only when you are satisfied it is them: a similar name or GitHub handle is not proof.</p>
+      <ul class="row-list" id="claims-list"></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="import-h">
+      <h2 id="import-h">Import legacy data</h2>
+      <p class="help">Choose the legacy export (for example <code>legacy_export.json</code>) or the scale fixture. Importing the same file again is safe: records already imported are skipped, not copied.</p>
+      <form id="import-form" novalidate>
+        <label for="import-file">Export file (JSON)</label>
+        <input type="file" id="import-file" accept=".json,application/json" aria-describedby="import-help" />
+        <p class="help" id="import-help">The file is read in your browser and sent to the server. Nothing is published that the file does not already mark as published.</p>
+        <button type="submit" id="import-btn">Run import</button>
+      </form>
+      <div id="import-report" aria-live="polite"></div>
+      <h3>Import history</h3>
+      <ul class="row-list" id="runs-list"></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="profiles-h">
+      <h2 id="profiles-h">Profiles</h2>
+      <form id="profile-search" novalidate>
+        <label for="profile-q">Find a profile by name, id, legacy id (e.g. LS04) or legacy email</label>
+        <input type="search" id="profile-q" autocomplete="off" />
+        <button type="submit">Search</button>
+      </form>
+      <ul class="row-list" id="profiles-list"></ul>
+
+      <h3 id="merge-h">Merge duplicate profiles</h3>
+      <p class="help">The duplicate's contributions, skills, collaboration links and requests move to the surviving profile. Its old address then leads visitors to the surviving profile.</p>
+      <form id="merge-form" class="stack" novalidate>
+        <label for="merge-from">Duplicate profile id (will be retired into the other)</label>
+        <input type="text" id="merge-from" autocomplete="off" />
+        <label for="merge-into">Surviving profile id</label>
+        <input type="text" id="merge-into" autocomplete="off" />
+        <label for="merge-note">Reason</label>
+        <input type="text" id="merge-note" maxlength="1000" />
+        <button type="submit">Merge profiles</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="partners-h">
+      <h2 id="partners-h">Duplicate partners</h2>
+      <p class="help">Collaborations and project links move to the surviving partner, and the duplicate's public page points to it.</p>
+      <form id="co-merge-form" class="stack" novalidate>
+        <label for="co-from">Duplicate partner</label>
+        <select id="co-from"></select>
+        <label for="co-into">Surviving partner</label>
+        <select id="co-into"></select>
+        <label for="co-note">Reason</label>
+        <input type="text" id="co-note" maxlength="1000" />
+        <button type="submit">Merge partners</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="projects-h">
+      <h2 id="projects-h">Project maintainers</h2>
+      <p class="help">When a maintainer has left, choose another accepted contributor. The project keeps its address, contributors and history.</p>
+      <form id="project-search" novalidate>
+        <label for="project-q">Find a project by title or id</label>
+        <input type="search" id="project-q" autocomplete="off" />
+        <button type="submit">Search</button>
+      </form>
+      <ul class="row-list" id="projects-list"></ul>
+    </section>
+
+    <section class="panel" aria-labelledby="diag-h">
+      <h2 id="diag-h">Diagnostics</h2>
+      <p class="help">Failed integrations and server errors (no passwords, codes or cookies are recorded), and every ownership, merge and status change.</p>
+      <p><button type="button" class="secondary" id="diag-btn">Refresh diagnostics</button></p>
+      <h3>Recent errors</h3>
+      <div class="table-wrap"><table><thead><tr><th scope="col">When</th><th scope="col">What</th><th scope="col">Context</th><th scope="col">Message</th></tr></thead><tbody id="diag-events"></tbody></table></div>
+      <h3>Record changes</h3>
+      <div class="table-wrap"><table><thead><tr><th scope="col">When</th><th scope="col">Change</th><th scope="col">Record</th><th scope="col">From → to</th><th scope="col">By</th><th scope="col">Note</th></tr></thead><tbody id="diag-audit"></tbody></table></div>
+    </section>
+  </div>
+</main>
+<footer class="site"><div class="inner">COSC-3506 Team 08 · Final Release</div></footer>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="admin-records.js"></script>
+</body>
+</html>

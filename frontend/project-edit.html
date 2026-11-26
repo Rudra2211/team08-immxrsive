@@ -115,6 +115,17 @@
       <label for="fallback_note">Fallback note</label>
       <textarea id="fallback_note" rows="2"></textarea>
 
+      <label for="demo_status">Demo state</label>
+      <select id="demo_status" aria-describedby="demo-status-help">
+        <option value="available">Available — show the Play demo action</option>
+        <option value="unavailable">Temporarily unavailable (broken build)</option>
+        <option value="archived">Archived — no longer playable</option>
+        <option value="replaced">Replaced by a newer build</option>
+      </select>
+      <p class="help" id="demo-status-help">Anything other than Available hides the Play action and tells visitors why. The project, its contributors and the fallback evidence stay public.</p>
+      <label for="demo_status_note">Note for visitors about the demo (optional)</label>
+      <input type="text" id="demo_status_note" maxlength="500" />
+
       <button type="submit" id="shared-btn">Save project details</button>
     </form>
 

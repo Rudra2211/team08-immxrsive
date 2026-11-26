@@ -24,6 +24,7 @@
   try {
     p = await apiGet(`/api/partners/${encodeURIComponent(id)}`);
   } catch (err) {
+    if (handleGone(root, err.gone, "partner.html", "Partner")) return;
     return notFound(err.notFound
       ? "This partner is not listed publicly. It may have been removed, or not published yet."
       : "This partner could not be loaded right now. Please try again in a moment.");
@@ -32,6 +33,7 @@
   document.title = `${p.name} — Industry Partner — ImmXrsive Talent Directory`;
   root.innerHTML = "";
   root.appendChild(el("h1", { text: p.name }));
+  mergedNotice(root);
 
   const current = p.collaborations.filter((c) => c.status === "current");
   const past = p.collaborations.filter((c) => c.status === "past");

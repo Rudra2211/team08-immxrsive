@@ -27,7 +27,9 @@ function render(s) {
   }
   try {
     render(await apiGet(`/api/students/${encodeURIComponent(id)}`));
+    mergedNotice(root);
   } catch (err) {
+    if (handleGone(root, err.gone, "student.html", "Profile")) return;
     if (err.notFound) {
       notFound(`We could not find a published profile with the id “${id}”. It may have been removed or the link may be mistyped.`);
     } else {

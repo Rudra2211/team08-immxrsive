@@ -53,8 +53,9 @@
       <p>
         <button type="button" id="publish-btn">Publish my profile</button>
         <button type="button" id="unpublish-btn" class="secondary">Unpublish my profile</button>
+        <button type="button" id="retire-btn" class="secondary">Retire (archive) my profile</button>
       </p>
-      <p class="help">Unpublishing takes you out of the public directory and keeps everything you have written.</p>
+      <p class="help">Unpublishing takes you out of the public directory and keeps everything you have written. Retiring archives your portfolio: your page says it is archived, shared projects still credit you by name, and <strong>Publish</strong> restores it. Nothing is deleted either way.</p>
     </section>
 
     <!-- R2.11 — the maintained profile. -->
@@ -110,6 +111,17 @@
         <legend>Work you are available for</legend>
         <div class="checks" id="availability-checks"></div>
         <p class="help">Choose any that apply. Employers filter the directory on this.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Are you looking for opportunities?</legend>
+        <div class="checks">
+          <label><input type="radio" name="availability_mode" value="active" /> Active Talent — I am seeking work now</label>
+          <label><input type="radio" name="availability_mode" value="showcase" /> Showcase Only — my portfolio stays public, but I am not seeking work</label>
+        </div>
+        <p class="help" id="confirmed-text" role="status"></p>
+        <label><input type="checkbox" id="confirm_availability" /> My availability above is still current (reconfirm it today)</label>
+        <p class="help">Availability not confirmed in the last 365 days is shown to employers as “not recently confirmed” and is left out of availability searches.</p>
       </fieldset>
 
       <h2>Skills</h2>

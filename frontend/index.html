@@ -44,7 +44,15 @@
           <label><input type="checkbox" name="availability" value="full-time" /> Full-time</label>
           <label><input type="checkbox" name="availability" value="contract" /> Contract</label>
         </div>
-        <p class="help">Any selected type may match.</p>
+        <p class="help">Any selected type may match. Only Active Talent who confirmed their availability in the last 365 days is matched.</p>
+      </fieldset>
+
+      <fieldset>
+        <legend>Talent</legend>
+        <div class="checks">
+          <label><input type="checkbox" name="talent" value="active" /> Active Talent only (seeking opportunities)</label>
+        </div>
+        <p class="help">Showcase Only portfolios are visible but not presented as job-seeking.</p>
       </fieldset>
 
       <fieldset>
@@ -66,10 +74,11 @@
   <h2 id="results-heading">Results</h2>
   <p class="result-count" id="result-count" role="status" aria-live="polite">Loading students…</p>
   <ul class="cards" id="results" aria-labelledby="results-heading"></ul>
+  <p><button type="button" class="secondary" id="load-more" hidden>Show more students</button></p>
   <div id="results-error"></div>
 </main>
 
-<footer class="site"><div class="inner">COSC-3506 Team 08 · Release 4 · synthetic fixture data · <a href="staff-login.html">Staff sign-in</a></div></footer>
+<footer class="site"><div class="inner">COSC-3506 Team 08 · Final Release · synthetic fixture data · <a href="staff-login.html">Staff sign-in</a></div></footer>
 
 <script src="config.js"></script>
 <script src="app.js"></script>

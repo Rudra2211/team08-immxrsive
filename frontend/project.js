@@ -23,7 +23,14 @@ function demoSection(p) {
   const section = el("section");
   section.appendChild(el("h2", { text: "Experience this project" }));
 
-  const hasPlayable = /^https?:\/\//i.test(String(p.playable_url || "").trim());
+  // F.37 — a broken, archived or replaced build keeps the project and its
+  // fallback evidence; only the Play action is withdrawn, with a reason.
+  const demoState = p.demo_status || "available";
+  const hasPlayable = demoState === "available" && /^https?:\/\//i.test(String(p.playable_url || "").trim());
+  if (demoState !== "available") {
+    const words = { unavailable: "The playable demo is temporarily unavailable.", archived: "The playable demo has been archived.", replaced: "The playable demo has been replaced." };
+    section.appendChild(el("div", { class: "notice info", role: "status", text: `${words[demoState] || "The playable demo is not available."}${p.demo_status_note ? " " + p.demo_status_note : ""}` }));
+  }
   const hasVideo = /^https?:\/\//i.test(String(p.video_url || "").trim());
   const hasImage = /^https?:\/\//i.test(String(p.fallback_image_url || "").trim());
 
@@ -69,7 +76,7 @@ function demoSection(p) {
       class: "meta",
       text: "No demo or media has been added for this project yet. The description, technologies and contributor roles above are the available evidence.",
     }));
-  } else if (!hasPlayable) {
+  } else if (!hasPlayable && demoState === "available") {
     section.appendChild(el("p", {
       class: "meta",
       text: "This project has no browser-playable demo. The evidence above and any media listed here describe the work instead.",
@@ -149,7 +156,13 @@ function render(p) {
   for (const c of p.contributors) {
     const li = el("li", { class: "card" });
     const h3 = el("h3");
-    h3.appendChild(el("a", { href: studentUrl(c.student_id), text: c.name }));
+    // F.16 — an archived contributor is still credited, without a dead link.
+    if (c.profile_public === false) {
+      h3.appendChild(document.createTextNode(c.name));
+      h3.appendChild(el("span", { class: "meta", text: " (profile archived)" }));
+    } else {
+      h3.appendChild(el("a", { href: studentUrl(c.student_id), text: c.name }));
+    }
     li.appendChild(h3);
     // R3.15 — the standardized role, plus who maintains the shared record, so
     // a visitor understands each person's part without a legend.
@@ -177,6 +190,7 @@ function render(p) {
   try {
     render(await apiGet(`/api/projects/${encodeURIComponent(id)}`));
   } catch (err) {
+    if (handleGone(root, err.gone, "project.html", "Project")) return;
     if (err.notFound) {
       notFound(`We could not find a project with the id “${id}”. It may have been removed or the link may be mistyped.`);
     } else {
