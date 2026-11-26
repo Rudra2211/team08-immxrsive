@@ -55,6 +55,11 @@ async function importFixtures() {
         );
       }
 
+      // F.14 — the R1 fixture's availability counts as confirmed when loaded.
+      await client.query(
+        "UPDATE students SET availability_confirmed_at = COALESCE(availability_confirmed_at, NOW()) WHERE id = $1",
+        [s.id]
+      );
       await client.query("DELETE FROM student_availability WHERE student_id = $1", [s.id]);
       for (const value of s.availability || []) {
         await client.query(

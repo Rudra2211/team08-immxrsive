@@ -586,6 +586,7 @@ function register(app) {
     } catch (err) {
       const message = err instanceof ImportError ? err.message : "The import failed unexpectedly. Enter the details manually.";
       if (!(err instanceof ImportError)) console.error("company import failed:", err.message);
+      require("./final").recordDiagnostic("company_import_failed", { source_url: String(sourceUrl || "").slice(0, 300) }, err.message);
       await pool
         .query(
           `INSERT INTO company_imports (id, company_id, source_url, ok, error, imported_by)
@@ -998,7 +999,12 @@ function register(app) {
   app.get("/api/partners/:cid", async (req, res) => {
     try {
       const partner = await publicPartner(req.params.cid);
-      if (!partner) return res.status(404).json({ error: "Partner not found." });
+      if (!partner) {
+        // F.18 — a merged partner's old URL points at the surviving record.
+        const gone = await require("./final").continuity("company", req.params.cid);
+        if (gone) return res.status(410).json(gone);
+        return res.status(404).json({ error: "Partner not found." });
+      }
       res.json(partner);
     } catch (err) {
       console.error("GET /api/partners/:cid failed:", err.message);

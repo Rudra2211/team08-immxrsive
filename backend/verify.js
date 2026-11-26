@@ -130,6 +130,8 @@ function register(app) {
       });
     } catch (err) {
       console.error("POST /api/verify/request failed:", err.message);
+      // Only the user id: the address and the code are never recorded.
+      require("./final").recordDiagnostic("verification_delivery_failed", { user: req.user.id }, err.message);
       res.status(500).json({ error: "Could not issue a verification code." });
     }
   });

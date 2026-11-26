@@ -83,12 +83,30 @@ function ownerView(row, skills, availability) {
     experience: row.experience,
     status: row.status,
     profile_status: row.profile_status,
+    ...talentState(row),
     links: row.links || {},
     visibility: row.visibility || {},
     theme: row.theme,
     section_order: row.section_order,
     skills,
     availability,
+  };
+}
+
+/**
+ * F.13, F.14 — whether a profile is presented as actively seeking work is
+ * separate from whether it is visible. Availability confirmed more than 365
+ * days ago (or never) is stale: it is not shown, or filtered on, as current.
+ */
+const STALE_DAYS = 365;
+function talentState(row) {
+  const confirmed = row.availability_confirmed_at ? new Date(row.availability_confirmed_at) : null;
+  const stale = !confirmed || Date.now() - confirmed.getTime() > STALE_DAYS * 86400000;
+  const mode = row.availability_mode === "showcase" ? "showcase" : "active";
+  return {
+    availability_mode: mode,
+    availability_confirmed_at: confirmed ? confirmed.toISOString() : null,
+    talent_state: mode === "showcase" ? "showcase" : stale ? "needs_reconfirmation" : "active",
   };
 }
 
@@ -113,8 +131,11 @@ function publicView(row, skills, availability) {
     theme: row.theme,
     section_order: row.section_order,
     skills,
+    ...talentState(row),
   };
-  if (vis.availability !== false) out.availability = availability;
+  if (row.profile_status === "retired") out.retired = true;
+  // F.14 — only Active Talent with a fresh confirmation lists what it seeks.
+  if (vis.availability !== false) out.availability = out.talent_state === "active" ? availability : [];
   if (vis.links !== false) out.links = row.links || {};
   if (vis.location !== false && row.location_text) out.location_text = row.location_text;
   if (vis.contact_email === true && row.contact_email) out.contact_email = row.contact_email;
@@ -276,6 +297,19 @@ function register(app) {
         }
       }
 
+      if (b.availability_mode === "active" || b.availability_mode === "showcase") {
+        await client.query("UPDATE students SET availability_mode = $2 WHERE id = $1", [row.id, b.availability_mode]);
+      }
+      // F.14 — changing availability, or ticking "reconfirm", stamps today's
+      // date; saving an unrelated field does not silently reconfirm it.
+      const before = (await client.query("SELECT value FROM student_availability WHERE student_id = $1 ORDER BY value", [row.id])).rows.map((r) => r.value);
+      const after = Array.isArray(b.availability)
+        ? Array.from(new Set(b.availability.map((v) => String(v || "").trim().toLowerCase()).filter((v) => AVAILABILITY.includes(v)))).sort()
+        : before;
+      if (b.confirm_availability === true || after.join() !== before.join() || (b.availability_mode === "active" && row.availability_mode === "showcase")) {
+        await client.query("UPDATE students SET availability_confirmed_at = NOW() WHERE id = $1", [row.id]);
+      }
+
       if (Array.isArray(b.availability)) {
         const values = b.availability
           .map((v) => String(v || "").trim().toLowerCase())
@@ -326,10 +360,13 @@ function register(app) {
     try {
       const row = await ownedProfile(req, res);
       if (!row) return;
+      if (row.profile_status === "merged") {
+        return res.status(409).json({ error: "This profile was merged into another one by staff." });
+      }
       if (!row.name.trim() || !row.headline.trim()) {
         return res.status(400).json({ error: "Add your name and a headline before publishing." });
       }
-      await pool.query("UPDATE students SET profile_status = 'published' WHERE id = $1", [row.id]);
+      await pool.query("UPDATE students SET profile_status = 'published', retired_at = NULL WHERE id = $1", [row.id]);
       res.json({ profile_status: "published", id: row.id });
     } catch (err) {
       console.error("POST /api/profile/publish failed:", err.message);
@@ -350,6 +387,23 @@ function register(app) {
     }
   });
 
+  /**
+   * F.15, F.16 — retire (archive) a profile. Nothing is deleted: shared
+   * projects keep crediting the person by name, and Restore publishes again.
+   */
+  app.post("/api/profile/retire", requireAuth, requireVerified, async (req, res) => {
+    try {
+      const row = await ownedProfile(req, res);
+      if (!row) return;
+      if (row.profile_status === "merged") return res.status(409).json({ error: "This profile was merged into another one." });
+      await pool.query("UPDATE students SET profile_status = 'retired', retired_at = NOW() WHERE id = $1", [row.id]);
+      res.json({ profile_status: "retired", id: row.id });
+    } catch (err) {
+      console.error("POST /api/profile/retire failed:", err.message);
+      res.status(500).json({ error: "Could not retire your profile." });
+    }
+  });
+
   /** The vocabulary the editor offers, so the client never invents one. */
   app.get("/api/profile/options", (req, res) => {
     res.json({
@@ -363,4 +417,4 @@ function register(app) {
   });
 }
 
-module.exports = { register, publicView, plainText, partitionSkills, VISIBILITY_FIELDS };
+module.exports = { register, publicView, talentState, plainText, partitionSkills, VISIBILITY_FIELDS, AVAILABILITY, STATUSES };

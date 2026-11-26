@@ -15,7 +15,7 @@ const pool = new Pool({
 async function initDb() {
   // R1 schema first, then the additive R2, R3 and R4 migrations, in order. All
   // are idempotent, so a restart or redeploy re-runs them harmlessly.
-  for (const file of ["schema.sql", "schema_r2.sql", "schema_r3.sql", "schema_r4.sql"]) {
+  for (const file of ["schema.sql", "schema_r2.sql", "schema_r3.sql", "schema_r4.sql", "schema_final.sql"]) {
     await pool.query(fs.readFileSync(path.join(__dirname, file), "utf8"));
   }
 }

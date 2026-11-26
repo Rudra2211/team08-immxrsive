@@ -14,11 +14,21 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "")
 // credentials:true is required for the session cookie to survive the
 // frontend/backend origin split on Render (R2.01).
 app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : true, credentials: true }));
-app.use(express.json());
+app.use(express.json({ limit: "2mb" })); // the scale fixture is ~110 KB
+// F.32 — every 5xx is recorded (method, path, status, time; no bodies, no
+// cookies) so staff can investigate without a server shell.
+app.use((req, res, next) => {
+  res.on("finish", () => {
+    if (res.statusCode >= 500) {
+      require("./final").recordDiagnostic("server_error", { method: req.method, path: req.path, status: res.statusCode }, "");
+    }
+  });
+  next();
+});
 
 require("./auth").register(app);
 require("./verify").register(app);
-const { publicView } = require("./profile");
+const { publicView, talentState } = require("./profile");
 require("./profile").register(app);
 require("./resume").register(app);
 // Registered before the public /api/projects/:id handler below, so the static
@@ -28,6 +38,9 @@ require("./projects").register(app);
 // Release 4 — staff operations, industry partners and collaborations.
 const r4 = require("./r4");
 r4.register(app);
+// Final Release — migration, claims, merge/recovery, diagnostics.
+const final = require("./final");
+final.register(app);
 
 /** Query params may arrive as ?skill=A&skill=B or ?skill=A,B. Normalise both. */
 function toList(value) {
@@ -42,7 +55,7 @@ function toList(value) {
 app.get("/", (req, res) => {
   res.json({
     service: "team08-immxrsive-backend",
-    release: "R4",
+    release: "FINAL",
     health: "/health",
     endpoints: [
       "/api/students",
@@ -56,6 +69,8 @@ app.get("/", (req, res) => {
       "/api/partners",
       "/api/partners/{id}",
       "/api/staff/queue (staff only)",
+      "/api/staff/migrations (staff only)",
+      "/api/claims",
     ],
   });
 });
@@ -130,6 +145,10 @@ app.get("/api/students", async (req, res) => {
   if (availability.length) {
     params.push(availability);
     const p = `$${params.length}`;
+    // F.13, F.14 — only Active Talent confirmed within 365 days counts as
+    // currently available; Showcase Only and stale profiles never match.
+    where.push(`s.availability_mode = 'active'`);
+    where.push(`s.availability_confirmed_at > NOW() - INTERVAL '365 days'`);
     where.push(`EXISTS (
       SELECT 1 FROM student_availability sa
       WHERE sa.student_id = s.id AND sa.value = ANY(${p}::text[])
@@ -140,10 +159,22 @@ app.get("/api/students", async (req, res) => {
     params.push(status);
     where.push(`s.status = ANY($${params.length}::text[])`);
   }
+  if (req.query.talent === "active" || req.query.talent === "showcase") {
+    params.push(req.query.talent);
+    where.push(`s.availability_mode = $${params.length}`);
+  }
+
+  // F.28 — the directory is paged, so the first load is the same size whether
+  // the database holds 20 students or 220. The body stays a plain array; the
+  // total travels in X-Total-Count.
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 24, 1), 100);
+  const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
 
   const sql = `
     SELECT
       s.id, s.name, s.headline, s.program, s.status, s.links,
+      s.availability_mode, s.availability_confirmed_at,
+      COUNT(*) OVER()::int AS total_count,
       COALESCE((SELECT ARRAY_AGG(ss.skill_name ORDER BY ss.skill_name)
                 FROM student_skills ss WHERE ss.student_id = s.id), '{}') AS skills,
       COALESCE((SELECT ARRAY_AGG(sa.value ORDER BY sa.value)
@@ -158,11 +189,24 @@ app.get("/api/students", async (req, res) => {
           AND p.project_status = 'published') AS project_count
     FROM students s
     WHERE ${where.join("\n      AND ")}
-    ORDER BY s.name ASC, s.id ASC`; // stable, deterministic order (R1.10)
+    ORDER BY s.name ASC, s.id ASC
+    LIMIT ${limit} OFFSET ${offset}`; // stable, deterministic order (R1.10)
 
   try {
     const r = await pool.query(sql, params);
-    res.json(r.rows);
+    let total = r.rows.length ? r.rows[0].total_count : 0;
+    if (!r.rows.length && offset > 0) {
+      const c = await pool.query(`SELECT COUNT(*)::int AS n FROM students s WHERE ${where.join(" AND ")}`, params);
+      total = c.rows[0].n;
+    }
+    res.set("X-Total-Count", String(total));
+    res.set("Access-Control-Expose-Headers", "X-Total-Count");
+    res.json(
+      r.rows.map(({ total_count, availability_mode, availability_confirmed_at, ...row }) => {
+        const t = talentState({ availability_mode, availability_confirmed_at });
+        return { ...row, ...t, availability: t.talent_state === "active" ? row.availability : [] };
+      })
+    );
   } catch (err) {
     console.error("GET /api/students failed:", err.message);
     res.status(500).json({ error: "Could not load students." });
@@ -176,7 +220,8 @@ app.get("/api/students/:id", async (req, res) => {
     const r = await pool.query(
       `SELECT s.id, s.name, s.headline, s.program, s.status, s.links,
         s.bio, s.location_text, s.contact_email, s.education, s.experience,
-        s.visibility, s.theme, s.section_order,
+        s.visibility, s.theme, s.section_order, s.profile_status,
+        s.availability_mode, s.availability_confirmed_at,
         COALESCE((SELECT ARRAY_AGG(ss.skill_name ORDER BY ss.skill_name)
                   FROM student_skills ss WHERE ss.student_id = s.id), '{}') AS skills,
         COALESCE((SELECT ARRAY_AGG(sa.value ORDER BY sa.value)
@@ -186,6 +231,9 @@ app.get("/api/students/:id", async (req, res) => {
       [id]
     );
     if (r.rowCount === 0) {
+      // F.18 — a merged or retired profile's old URL still explains itself.
+      const gone = await final.continuity("student", id);
+      if (gone) return res.status(410).json(gone);
       return res.status(404).json({ error: "Student not found." });
     }
 
@@ -230,6 +278,7 @@ app.get("/api/projects", async (req, res) => {
     const r = await pool.query(
       `SELECT p.id, p.title, p.description, p.domain, p.links,
         p.playable_url, p.video_url, p.fallback_image_url, p.fallback_note,
+        p.demo_status, p.demo_status_note,
         COALESCE((SELECT ARRAY_AGG(pt.technology ORDER BY pt.technology)
                   FROM project_technologies pt WHERE pt.project_id = p.id), '{}') AS technologies
        FROM projects p
@@ -254,6 +303,7 @@ app.get("/api/projects/:id", async (req, res) => {
     const r = await pool.query(
       `SELECT p.id, p.title, p.description, p.domain, p.links, p.date_text,
         p.playable_url, p.video_url, p.fallback_image_url, p.fallback_note,
+        p.demo_status, p.demo_status_note,
         COALESCE((SELECT ARRAY_AGG(pt.technology ORDER BY pt.technology)
                   FROM project_technologies pt WHERE pt.project_id = p.id), '{}') AS technologies,
         COALESCE((SELECT ARRAY_AGG(pr.url ORDER BY pr.added_at)
@@ -262,6 +312,8 @@ app.get("/api/projects/:id", async (req, res) => {
       [id]
     );
     if (r.rowCount === 0) {
+      const gone = await final.continuity("project", id);
+      if (gone) return res.status(410).json(gone);
       return res.status(404).json({ error: "Project not found." });
     }
 
@@ -275,8 +327,10 @@ app.get("/api/projects/:id", async (req, res) => {
     // here: it governs the student's own portfolio (R3.12), while the
     // canonical project page must still credit everyone who took part.
     const contributors = await pool.query(
-      `SELECT s.id AS student_id, s.name, s.headline, pc.role,
-              pc.contribution_statement,
+      `SELECT s.id AS student_id, s.name,
+              CASE WHEN s.profile_status = 'published' THEN s.headline ELSE '' END AS headline,
+              pc.role, pc.contribution_statement,
+              (s.profile_status = 'published') AS profile_public,
               (pc.student_id = p.maintainer_student_id) AS is_maintainer
        FROM project_contributors pc
        JOIN students s ON s.id = pc.student_id
@@ -284,7 +338,9 @@ app.get("/api/projects/:id", async (req, res) => {
        WHERE pc.project_id = $1
          AND pc.status = 'accepted'
          AND pc.removed_at IS NULL
-         AND s.profile_status = 'published'
+         -- F.16 — a retired contributor is still credited by name (no link),
+         -- so shared history survives one person archiving their profile.
+         AND s.profile_status IN ('published', 'retired')
        ORDER BY is_maintainer DESC, s.name ASC, s.id ASC`,
       [id]
     );
@@ -352,6 +408,12 @@ app.post("/api/inquiries", async (req, res) => {
 });
 
 app.use((req, res) => res.status(404).json({ error: "Not found." }));
+// F.32 — anything that escapes a route is logged for staff, not shown raw.
+app.use((err, req, res, next) => {
+  console.error(`${req.method} ${req.path} failed:`, err.message);
+  if (res.headersSent) return next(err);
+  res.status(err.status === 400 ? 400 : 500).json({ error: err.status === 400 ? "The request could not be read." : "Something went wrong on our side. Please try again." });
+});
 
 initDb()
   .then(() => r4.ensureStaffAccount())

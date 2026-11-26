@@ -218,6 +218,8 @@ async function editableProject(projectId, viewerStudentId) {
     video_url: project.video_url,
     fallback_image_url: project.fallback_image_url,
     fallback_note: project.fallback_note,
+    demo_status: project.demo_status,
+    demo_status_note: project.demo_status_note,
     links: project.links || {},
     technologies: techs.rows.map((r) => r.technology),
     repositories: repos.rows,
@@ -227,6 +229,8 @@ async function editableProject(projectId, viewerStudentId) {
     my_contribution: mine,
   };
 }
+
+const DEMO_STATES = ["available", "unavailable", "archived", "replaced"];
 
 function register(app) {
   // -------------------------------------------------------------------------
@@ -325,6 +329,7 @@ function register(app) {
         return res.status(404).json({ error: "That repository could not be found. Check the URL, and that the repository is public." });
       }
       if (!repoRes.ok) {
+        require("./final").recordDiagnostic("github_import_failed", { slug, status: repoRes.status }, "GitHub API returned an error");
         return res.status(502).json({ error: "GitHub could not be reached just now. You can still enter the project manually." });
       }
 
@@ -347,6 +352,7 @@ function register(app) {
       });
     } catch (err) {
       console.error("POST /api/projects/import-github failed:", err.message);
+      require("./final").recordDiagnostic("github_import_failed", { slug }, err.message);
       res.status(502).json({ error: "GitHub could not be reached just now. You can still enter the project manually." });
     }
   });
@@ -530,6 +536,7 @@ function register(app) {
         `UPDATE projects SET
            title = $1, description = $2, domain = $3, date_text = $4, links = $5,
            playable_url = $6, video_url = $7, fallback_image_url = $8, fallback_note = $9,
+           demo_status = COALESCE($12, demo_status), demo_status_note = COALESCE($13, demo_status_note),
            version = version + 1, updated_at = NOW()
          WHERE id = $10 AND version = $11
          RETURNING version`,
@@ -545,6 +552,9 @@ function register(app) {
           plainText(b.fallback_note, 500),
           ctx.project.id,
           version,
+          // F.37 — a broken or retired build is a state, not a deletion.
+          DEMO_STATES.includes(b.demo_status) ? b.demo_status : null,
+          b.demo_status_note === undefined ? null : plainText(b.demo_status_note, 500),
         ]
       );
 
