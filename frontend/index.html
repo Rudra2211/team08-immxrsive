@@ -18,12 +18,20 @@
 </header>
 
 <main id="main">
-  <section class="hero" aria-labelledby="hero-title">
-    <div class="hero-mosaic" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-    <h1 id="hero-title">Find student <span class="hl">talent</span></h1>
-    <p class="lede">Search by name, headline or skill, then narrow by skill, availability and status. No account needed.</p>
-    <p class="hero-actions"><a class="btn" href="#filters">Start searching</a> <a class="btn secondary" href="partners.html">See industry partners</a></p>
+  <section class="hero hero-orbit" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="hero-kicker">Algoma University · ImmXrsive</p>
+      <h1 id="hero-title">Find student <span class="hl">talent</span></h1>
+      <p class="lede">Search by name, headline or skill, then narrow by skill, availability and status. No account needed.</p>
+      <p class="hero-actions"><a class="btn" href="#filters">Start searching</a> <a class="btn secondary" href="partners.html">See industry partners</a></p>
+    </div>
+    <!-- Decoration for pointer users: the same students are in the results list below. -->
+    <div class="orbit" aria-hidden="true"><div class="orbit-sphere"></div></div>
+    <p class="orbit-count" aria-hidden="true"><b>00</b> / <i>00</i></p>
+    <p class="orbit-caption" aria-hidden="true"><span>Talent</span> in Orbit</p>
+    <p class="orbit-hint" aria-hidden="true">Drag to spin · click a card</p>
   </section>
+  </div>
 
   <form class="panel" id="filters" novalidate>
     <div class="controls-row">
@@ -82,10 +90,27 @@
   <div id="results-error"></div>
 </main>
 
+<!-- The focused card from the orbit sits outside <main> so it covers the whole page. -->
+  <div class="orbit-focus" id="orbit-focus" role="dialog" aria-modal="true" aria-labelledby="orbit-focus-name" hidden>
+    <article class="orbit-card">
+      <p class="orbit-card-tag"></p>
+      <span class="orbit-card-ava" aria-hidden="true"></span>
+      <h2 id="orbit-focus-name"></h2>
+      <p class="orbit-card-head"></p>
+      <ul class="tags orbit-card-tags"></ul>
+      <p class="orbit-card-meta"></p>
+    </article>
+    <div class="orbit-bar">
+      <button type="button" class="orbit-bar-close" aria-label="Close">&times;</button>
+      <span class="orbit-bar-name"></span>
+      <a class="orbit-bar-link" href="index.html">View profile &#8599;</a>
+    </div>
+
 <footer class="site"><div class="inner">COSC-3506 Team 08 · Final Release · synthetic fixture data · <a href="staff-login.html">Staff sign-in</a></div></footer>
 
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script src="directory.js"></script>
+<script src="orbit.js"></script>
 </body>
 </html>

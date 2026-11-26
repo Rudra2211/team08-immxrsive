@@ -126,6 +126,7 @@ async function loadStudents(append = false) {
     }
 
     for (const s of data) resultsEl.appendChild(studentCard(s));
+    if (!append && window.ImmOrbit) window.ImmOrbit.show(data);
     shown += data.length;
     countEl.textContent = `${total} student${total === 1 ? "" : "s"} found${shown < total ? ` — showing ${shown}` : ""}.`;
     moreBtn.hidden = shown >= total;

@@ -6,7 +6,7 @@
    Body type stays Atkinson Hyperlegible for low-vision readers; display type
    is Bricolage Grotesque. Presentation only: no selector here changes what a
    page does. */
-@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter+Tight:wght@500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter+Tight:wght@500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap");
 
 /* ---- Tokens ------------------------------------------------------------- */
 :root {
@@ -38,9 +38,8 @@
   --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* Page-to-page motion is the card launch below (app.js cardLaunch); the
-   browser's cross-document view transitions are not used, because an aborted
-   one reports a console error. */
+/* The browser's cross-document view transitions are not used: an aborted one
+   reports a console error during fast navigation. */
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -678,25 +677,125 @@ button.secondary:hover, .btn.secondary:hover { background: rgba(255, 255, 255, 0
 }
 dl.facts + h2, dl.facts + h3 { margin-top: 1.8rem; }
 
-/* ---- Card launch: a 3D lift into the full page (app.js cardLaunch) ------ */
-.cards.has-launch > .card:not(.is-launching) { transition: opacity 300ms ease, filter 300ms ease; opacity: 0.25; filter: blur(2px); }
-.launch-stage { position: fixed; inset: 0; z-index: 70; pointer-events: none; perspective: 1400px; }
-.launch-stage .card.is-launching {
-  position: fixed; margin: 0; transform-style: preserve-3d;
-  animation: card-launch 560ms cubic-bezier(0.6, 0, 0.2, 1) forwards;
+
+
+/* ---- Home hero: "Talent in Orbit" globe (orbit.js) ----------------------- */
+/* A light stage like a studio backdrop, so the colourful badges read as
+   physical cards floating on a sphere. */
+.hero.hero-orbit {
+  --stage: #ecebe7; --stage-ink: #121212; --stage-muted: #55534e;
+  display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: center; gap: 1rem;
+  text-align: left; padding: 3.2rem 2.4rem 3.4rem; min-height: 560px;
+  background: radial-gradient(70% 70% at 65% 50%, #f7f6f3, var(--stage) 70%);
+  color: var(--stage-ink); border-color: rgba(0, 0, 0, 0.08);
 }
-@keyframes card-launch {
-  0%   { transform: translate3d(0, 0, 0) rotateY(0) rotateX(0) scale(1); box-shadow: 0 0 0 rgba(0, 0, 0, 0); }
-  45%  { transform: translate3d(calc(var(--lx) * 0.5), calc(var(--ly) * 0.5), 160px) rotateY(-18deg) rotateX(8deg) scale(1.12); box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.9); }
-  100% { transform: translate3d(var(--lx), var(--ly), 320px) rotateY(0) rotateX(0) scale(1.45); opacity: 0; }
+.hero.hero-orbit::after { content: none; }
+.hero-orbit > * { max-width: none; margin: 0; }
+.hero-orbit .hero-kicker { font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--stage-muted); margin: 0 0 1rem; font-weight: 700; }
+.hero-orbit h1 { color: var(--stage-ink); font-size: clamp(2.6rem, 1.4rem + 4.6vw, 5.2rem); max-width: 10ch; font-weight: 600; letter-spacing: -0.04em; }
+.hero-orbit .hl {
+  font-family: "Instrument Serif", Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: -0.01em;
+  color: var(--stage-ink); outline: 0; padding: 0;
 }
-/* The full page arrives with a matching flip-in. */
-.from-card #profile, .from-card #project, .from-card #partner {
-  transform-origin: 50% 0; animation: page-flip-in 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+.hero-orbit .hl::before, .hero-orbit .hl::after { content: none; }
+.hero-orbit .lede { color: var(--stage-muted); margin: 0 0 1.6rem; max-width: 38ch; }
+.hero-orbit .hero-actions { justify-content: flex-start; }
+.hero-orbit .btn.secondary, .hero-orbit a.btn.secondary:visited { color: var(--stage-ink); border-color: rgba(0, 0, 0, 0.28); }
+.hero-orbit .btn.secondary:hover { background: rgba(0, 0, 0, 0.05); border-color: rgba(0, 0, 0, 0.55); color: var(--stage-ink); }
+.hero-orbit .btn:not(.secondary) { background: var(--stage-ink); color: #fff; box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.5); }
+.hero-orbit .btn:not(.secondary):hover { background: #000; color: #fff; box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.55); }
+.hero-orbit .btn:focus-visible { outline-color: #b25b00; }
+
+.orbit {
+  position: relative; height: 540px; perspective: 1600px; cursor: grab; touch-action: pan-y;
+  user-select: none; -webkit-user-select: none;
 }
-@keyframes page-flip-in {
-  from { opacity: 0; transform: perspective(1400px) rotateX(-14deg) translateY(40px) scale(0.94); }
+.orbit:active { cursor: grabbing; }
+.orbit-sphere { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+.orbit-tile {
+  position: absolute; left: 0; top: 0; box-sizing: border-box; border-radius: 10px; overflow: hidden;
+  display: grid; grid-template-columns: auto 1fr; grid-template-rows: 38% auto 1fr; column-gap: 6%;
+  padding: 0 7% 6%; backface-visibility: visible;
+  background:
+    linear-gradient(120deg, var(--a, #d9d7d2), var(--b, #cfcdc8)) top / 100% 38% no-repeat,
+    #ffffff;
+  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.35);
+  transition: opacity 120ms linear, box-shadow 200ms ease;
+}
+.orbit-tile.is-empty { background: #dcdad5; box-shadow: none; }
+/* Seen from behind, a tile is a plain grey card, like the reverse of a print. */
+.orbit-tile.is-back { background: #d6d4cf; box-shadow: none; }
+.orbit-tile.is-back > * { visibility: hidden; }
+.orbit-tile:not(.is-back):hover { box-shadow: 0 0 0 2px #121212, 0 10px 24px -8px rgba(0, 0, 0, 0.45); }
+.orbit-ava {
+  grid-column: 1; grid-row: 1 / span 2; align-self: end; margin-bottom: -2px;
+  width: 2.1em; height: 2.1em; border-radius: 50%; display: grid; place-items: center;
+  background: #121212; color: #fff; font: 700 0.7rem/1 var(--heading); border: 2px solid #fff;
+}
+.orbit-name, .orbit-head { grid-column: 2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: #121212; }
+.orbit-name { grid-row: 2; font: 700 0.74rem/1.2 var(--heading); align-self: end; }
+.orbit-head { grid-row: 3; font: 400 0.62rem/1.3 var(--body); color: #55534e; }
+.orbit-tile .orbit-head { grid-column: 1 / span 2; }
+.orbit-count, .orbit-caption, .orbit-hint { position: absolute; margin: 0; color: var(--stage-ink); pointer-events: none; }
+.orbit-count { top: 1.4rem; right: 1.8rem; font: 600 0.9rem/1 var(--heading); }
+.orbit-count i { font-style: normal; color: var(--stage-muted); }
+.orbit-caption { right: 1.8rem; bottom: 1.4rem; font: 500 clamp(1.4rem, 1rem + 1.4vw, 2.2rem)/1 var(--heading); letter-spacing: -0.03em; text-align: right; }
+.orbit-caption span { display: block; font-family: "Instrument Serif", Georgia, serif; font-style: italic; font-weight: 400; }
+.orbit-hint { left: 2.4rem; bottom: 1.4rem; font-size: 0.8rem; color: var(--stage-muted); }
+
+/* The focused card: the student comes forward out of the globe. */
+.orbit-focus {
+  position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; align-content: center; gap: 1.2rem;
+  padding: 1rem; background: rgba(236, 235, 231, 0.55);
+  -webkit-backdrop-filter: blur(10px) saturate(1.1); backdrop-filter: blur(10px) saturate(1.1);
+  animation: orbit-fade 260ms ease both;
+}
+.orbit-card {
+  width: min(560px, 100%); border-radius: 22px; overflow: hidden; color: #121212;
+  background: linear-gradient(120deg, var(--a), var(--b)) top / 100% 7.5rem no-repeat, #fff;
+  padding: 1.1rem 1.6rem 1.6rem; box-shadow: 0 40px 90px -30px rgba(0, 0, 0, 0.55);
+  animation: orbit-zoom 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.orbit-card-tag {
+  display: inline-block; margin: 0 0 2.6rem; padding: 0.25rem 0.7rem; border-radius: 999px;
+  background: #fff; color: #121212; font-size: 0.8rem; font-weight: 700;
+}
+.orbit-card-ava {
+  display: grid; place-items: center; width: 4.2rem; height: 4.2rem; margin-top: -1.5rem; border-radius: 50%;
+  background: #121212; color: #fff; font: 700 1.2rem/1 var(--heading); border: 4px solid #fff;
+}
+.orbit-focus .orbit-card h2 { color: #121212; margin: 0.8rem 0 0.2rem; font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.3rem); opacity: 1 !important; translate: none !important; scale: none !important; }
+.orbit-card-head { color: #55534e; margin: 0 0 0.9rem; }
+.orbit-card .tag { background: #f1f0ec; color: #121212; border-color: transparent; }
+.orbit-card-meta { color: #55534e; font-size: 0.9rem; margin: 0.9rem 0 0; }
+.orbit-bar {
+  display: inline-flex; align-items: center; gap: 0.9rem; padding: 0.4rem 1.1rem 0.4rem 0.4rem;
+  border-radius: 999px; background: #fff; color: #121212; box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.5);
+  max-width: 100%; animation: orbit-rise 420ms 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.orbit-bar .orbit-bar-close {
+  width: 2.4rem; height: 2.4rem; padding: 0; margin: 0; border-radius: 50%;
+  background: #121212; color: #fff; font-size: 1.3rem; box-shadow: none;
+}
+.orbit-bar .orbit-bar-close:hover { background: #000; color: #fff; box-shadow: none; transform: none; }
+.orbit-bar-name { font-weight: 700; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.orbit-bar-link, .orbit-bar-link:visited { color: #121212; font-weight: 700; font-size: 0.92rem; white-space: nowrap; border-left: 1px solid rgba(0, 0, 0, 0.15); padding-left: 0.9rem; }
+.orbit-bar-link:hover { color: #000; }
+.orbit-focus :focus-visible { outline: 3px solid #b25b00; outline-offset: 3px; }
+@keyframes orbit-fade { from { opacity: 0; } }
+@keyframes orbit-zoom { from { opacity: 0; transform: translate(var(--fx, 0), var(--fy, 0)) scale(0.18) rotateY(-30deg); } }
+@keyframes orbit-rise { from { opacity: 0; transform: translateY(16px); } }
+
+@media (max-width: 860px) {
+  .hero.hero-orbit { grid-template-columns: 1fr; padding: 2.2rem 1.2rem 3.6rem; }
+  .orbit { height: 380px; }
+  .orbit-ava { font-size: 0.55rem; }
+  .orbit-name { font-size: 0.6rem; }
+  .orbit-head { font-size: 0.5rem; }
+  .orbit-count { top: 1rem; right: 1.1rem; }
+  .orbit-caption { right: 1.1rem; bottom: 1rem; }
+  .orbit-hint { left: 1.2rem; bottom: 1rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .launch-stage .card.is-launching, .from-card #profile, .from-card #project, .from-card #partner { animation: none; }
+  .orbit-focus, .orbit-card, .orbit-bar { animation: none; }
 }
