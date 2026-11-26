@@ -1,13 +1,341 @@
 {
-  "release": "R4",
+  "release": "FINAL",
   "deployment_url": "https://team08-r1-frontend.onrender.com",
   "api_base_url": "https://team08-r1-backend.onrender.com",
   "repository": "https://github.com/Rudra2211/team08-immxrsive",
-  "release_tag": "R4-submission",
+  "release_tag": "FINAL-submission",
   "team": "Team 08",
   "project_option": "Project 1 - ImmXrsive Talent and Industry Platform",
-  "notes": "Release 4 is Core plus the chosen Challenge R4.10 - Untrusted Website Content. R4.13, R4.14 and R4.19 are also implemented but are not the chosen Challenge. Route groups: /api/* is public; /api/my/* needs a signed-in verified student and resolves ownership from the session; /api/staff/* and /auth/staff/login are the staff surface, and every /api/staff/* route returns 401 without a session and 403 for a student session. Staff UI: /staff-login.html, /admin.html (work queue), /admin-partner.html?new=1 (add/import) and /admin-partner.html?id=<company id> (review, publish, collaborations). The R3 checks below are kept as the R4.27 regression set. Describing a check here does not claim it passes; it tells a reviewer where to reproduce it.",
+  "notes": "Final Release: cumulative hardening of Releases 1-4 (F.01-F.41). Route groups are unchanged: /api/* public; /api/my/* and /api/profile/* need a signed-in verified student and resolve ownership from the session; /api/claims* need a verified student; /api/staff/* and /auth/staff/login are staff-only (401 signed out, 403 for a student). New staff UI: /admin-records.html (legacy import and report, claims, profiles: status/owner/merge, duplicate partners, project maintainers, diagnostics). Migration CLI: `node backend/migrate.js <file>`. GET /api/students is now paged (limit default 24, max 100; offset) and returns the total in the X-Total-Count header; the body is still a plain array. A merged, retired or archived record's public API returns 410 with {merged, merged_into} or {retired}/{archived}, and its page redirects or explains. Legacy ids are mapped in legacy_ids: find an internal id on /admin-records.html -> Profiles (search LS01..LS06) or from the migration report. The R4 and R3 checks below are kept as the F.39 regression set. Describing a check here does not claim it passes; it tells a reviewer where to reproduce it.",
   "checks": [
+    {
+      "requirement_or_scenario": "F.01",
+      "entry_point": "/admin-records.html 'Import legacy data' -> POST /api/staff/migrations {data, source_name}; CLI: node backend/migrate.js <file>",
+      "method_or_action": "Choose tests/fixtures/final/legacy_export.json, Run import",
+      "role": "staff",
+      "setup": "Staff session",
+      "expected_behavior": "Report with created/updated/skipped/conflict counts per kind; records appear on public pages without recreating them by hand."
+    },
+    {
+      "requirement_or_scenario": "F.02",
+      "entry_point": "POST /api/staff/migrations (same file again); GET /api/staff/migrations",
+      "method_or_action": "Re-run the same import",
+      "role": "staff",
+      "setup": "legacy_export.json already imported (it is, on the live site)",
+      "expected_behavior": "created 0 and skipped 6/3/3/4; no second copy of any student/project/company/collaboration; both runs listed in Import history."
+    },
+    {
+      "requirement_or_scenario": "F.03",
+      "entry_point": "GET /api/staff/migrations/{run id} ('View report')",
+      "method_or_action": "Read the report",
+      "role": "staff",
+      "setup": "Any run",
+      "expected_behavior": "duplicate_student_candidates [LS04 -> LS01 'same email'], broken_references [LP02/LS99], unclaimed_profiles [LS02, LS05, LS06], plus duplicate_company_candidates (LC02 -> LC01), stale_availability, possible_existing_matches (Release 1 seed names), issues. Nothing merged or invented."
+    },
+    {
+      "requirement_or_scenario": "F.04",
+      "entry_point": "GET /api/projects/{id of LP01 'XR Anatomy Lab' (legacy)}",
+      "method_or_action": "Open the imported project",
+      "role": "public",
+      "setup": "Id from the report or Profiles/Projects search",
+      "expected_behavior": "One project with Avery Chen (XR Developer) and Daniel Kim (Interaction Developer) as accepted contributors."
+    },
+    {
+      "requirement_or_scenario": "F.05",
+      "entry_point": "GET /api/partners/{id of LC01 North Shore Simulations (legacy)}",
+      "method_or_action": "Open the partner",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "Shows 'Industrial Safety Training' (past) and 'XR Maintenance Study' (current); LC03's private 'Confidential Prototype' is absent from GET /api/partners/{LC03 id}."
+    },
+    {
+      "requirement_or_scenario": "F.06",
+      "entry_point": "legacy_ids table; GET /api/staff/students?q=LS01",
+      "method_or_action": "Search by legacy id",
+      "role": "staff",
+      "setup": "None",
+      "expected_behavior": "Internal ids (P_..., proj_..., co_..., col_...) differ from legacy ids, names, domains or repository URLs; re-imports find records only by legacy id."
+    },
+    {
+      "requirement_or_scenario": "F.07",
+      "entry_point": "GET /api/students/{id of LS05 'Unclaimed Alum'}",
+      "method_or_action": "Open the profile signed out",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "200, public, no owner; GET /api/staff/students shows owner 'unclaimed'."
+    },
+    {
+      "requirement_or_scenario": "F.08",
+      "entry_point": "/account.html 'Already had a profile on the old ImmXrsive site?' -> GET /api/claims/candidates?q=, POST /api/claims {student_id, note}",
+      "method_or_action": "Search and claim",
+      "role": "verified student",
+      "setup": "Own verified account",
+      "expected_behavior": "Auto-approved only when the verified Algoma email equals the legacy email; otherwise 'Waiting for staff review'. GET /api/claims/mine lists claims and decisions."
+    },
+    {
+      "requirement_or_scenario": "F.09",
+      "entry_point": "POST /api/claims",
+      "method_or_action": "Claim LS01/LS02/LS05 with an unrelated verified account or a look-alike GitHub login",
+      "role": "verified student",
+      "setup": "Verified account whose email differs",
+      "expected_behavior": "claim_status 'pending'; GET /api/profile still 404 (no ownership); a second pending claim 409; an owned profile 409."
+    },
+    {
+      "requirement_or_scenario": "F.10",
+      "entry_point": "/admin-records.html 'Profile claims' -> POST /api/staff/claims/{id}/decision {decision, note}; 'Profiles' -> POST /api/staff/students/{id}/owner {user | clear, note}",
+      "method_or_action": "Approve/reject; reassign or clear owner",
+      "role": "staff",
+      "setup": "A pending claim",
+      "expected_behavior": "Approve sets the owner (refused if the claimant already owns a profile: merge first); reject requires a note the student sees; owner changes require a note and are logged in Diagnostics."
+    },
+    {
+      "requirement_or_scenario": "F.11",
+      "entry_point": "/admin-records.html 'Profiles' -> POST /api/staff/students/{id}/status {status:'alumni'}",
+      "method_or_action": "Change status to alumni",
+      "role": "staff",
+      "setup": "Any profile",
+      "expected_behavior": "status becomes alumni; profile_status unchanged; public page still 200."
+    },
+    {
+      "requirement_or_scenario": "F.12",
+      "entry_point": "PUT /api/profile as an alumni whose verified_at is old",
+      "method_or_action": "Edit profile",
+      "role": "verified alumni",
+      "setup": "Alumni account",
+      "expected_behavior": "No re-verification: verified_at never expires; requireVerified only checks it exists."
+    },
+    {
+      "requirement_or_scenario": "F.13",
+      "entry_point": "/profile-edit.html 'Are you looking for opportunities?' -> PUT /api/profile {availability_mode}; GET /api/students?talent=active",
+      "method_or_action": "Switch Active Talent / Showcase Only",
+      "role": "verified student",
+      "setup": "Own profile",
+      "expected_behavior": "Showcase Only stays public but shows 'Showcase Only — not currently seeking opportunities', returns availability [] and never matches an availability filter; directory 'Active Talent only' filter."
+    },
+    {
+      "requirement_or_scenario": "F.14",
+      "entry_point": "GET /api/students/{id of LS02 legacy Daniel Kim}; GET /api/students?availability=full-time; /profile-edit.html reconfirm checkbox",
+      "method_or_action": "Inspect stale availability",
+      "role": "public / student",
+      "setup": "LS02 confirmed 2024-06-01",
+      "expected_behavior": "talent_state 'needs_reconfirmation', availability [] and 'Not recently confirmed (last confirmed …)'; not matched by availability filters; reconfirming (PUT {confirm_availability:true}) restores it."
+    },
+    {
+      "requirement_or_scenario": "F.15",
+      "entry_point": "/profile-edit.html 'Retire (archive) my profile' -> POST /api/profile/retire; restore with POST /api/profile/publish; unpublish POST /api/profile/unpublish",
+      "method_or_action": "Retire, then restore",
+      "role": "verified student",
+      "setup": "Own profile",
+      "expected_behavior": "Retired profile URL returns 410 {retired:true} and the page says it is archived; nothing deleted; publish restores."
+    },
+    {
+      "requirement_or_scenario": "F.16",
+      "entry_point": "GET /api/projects/{id of LP03 'Historical Training Demo'}",
+      "method_or_action": "Open the project of retired LS06",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "Contributor 'Retired Contributor' still listed with profile_public:false (shown as '(profile archived)', no link)."
+    },
+    {
+      "requirement_or_scenario": "F.17",
+      "entry_point": "/admin-records.html 'Merge duplicate profiles' -> POST /api/staff/students/merge {from_id, into_id, note}; 'Duplicate partners' -> POST /api/staff/companies/merge",
+      "method_or_action": "Merge LS04 into LS01; LC02 into LC01",
+      "role": "staff",
+      "setup": "Ids from Profiles search",
+      "expected_behavior": "Contributions, skills, collaboration links, requests and (if unowned) owner move to the survivor; merging two profiles owned by different users is refused (409); collaborations move to the surviving partner."
+    },
+    {
+      "requirement_or_scenario": "F.18",
+      "entry_point": "/student.html?id={merged id}, /partner.html?id={merged id}; API returns 410 {merged:true, merged_into}",
+      "method_or_action": "Open the old URL after a merge",
+      "role": "public",
+      "setup": "After F.17",
+      "expected_behavior": "Redirected to the surviving record with the notice 'The page you followed was combined with this one…'."
+    },
+    {
+      "requirement_or_scenario": "F.19",
+      "entry_point": "/admin-records.html 'Project maintainers' -> POST /api/staff/projects/{id}/maintainer {student_id, note}",
+      "method_or_action": "Assign a new maintainer",
+      "role": "staff",
+      "setup": "Project with 2+ accepted contributors",
+      "expected_behavior": "Same project URL and contributors; is_maintainer moves; non-contributor refused (400); logged."
+    },
+    {
+      "requirement_or_scenario": "F.20",
+      "entry_point": "GET /api/students/{id}, /api/students, /api/claims/candidates, /api/partners/{id}",
+      "method_or_action": "Inspect responses",
+      "role": "public / other student",
+      "setup": "Fields marked private; private collaboration",
+      "expected_behavior": "Private fields and legacy_email absent from every non-owner, non-staff response; private collaborations absent; limited shows summary only."
+    },
+    {
+      "requirement_or_scenario": "F.21",
+      "entry_point": "All /api/staff/* (incl. migrations, claims, students/*, companies/merge, projects/*/maintainer, diagnostics); PUT /api/profile with another id; PUT /api/my/projects/{id} as non-maintainer; PUT /api/my/projects/{id}/contribution",
+      "method_or_action": "Direct requests",
+      "role": "public / wrong student",
+      "setup": "Two student sessions",
+      "expected_behavior": "401 signed out, 403 student on staff routes; ownership/maintainer/contributor checks unchanged from R2-R4."
+    },
+    {
+      "requirement_or_scenario": "F.22",
+      "entry_point": "Profile/project text, resume import, company import, legacy import, demo URLs",
+      "method_or_action": "Submit markup or script text",
+      "role": "student / staff",
+      "setup": "None",
+      "expected_behavior": "Stored as plain text, rendered with textContent; URLs must be http(s); no embed markup accepted; imports never grant roles or verification."
+    },
+    {
+      "requirement_or_scenario": "F.23",
+      "entry_point": "Repository history; /config.js",
+      "method_or_action": "Search for secrets",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "Only placeholders in backend/.env.example; frontend config holds only the API URL."
+    },
+    {
+      "requirement_or_scenario": "F.24",
+      "entry_point": "Directory filters, profile form, contribution form, staff review and records pages",
+      "method_or_action": "Keyboard only",
+      "role": "all",
+      "setup": "None",
+      "expected_behavior": "Native controls with labels and visible focus; 'Show more students' moves focus to the first new result; staff confirmation is in-page (no dialogs)."
+    },
+    {
+      "requirement_or_scenario": "F.25",
+      "entry_point": "/index.html -> /student.html -> /project.html -> /inquiry.html; /profile-edit.html; /account.html at 390 px",
+      "method_or_action": "Mobile width",
+      "role": "public / student",
+      "setup": "None",
+      "expected_behavior": "No horizontal scrolling; all actions reachable."
+    },
+    {
+      "requirement_or_scenario": "F.26",
+      "entry_point": "Public images and forms",
+      "method_or_action": "Inspect alt text and errors",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "Fallback images have alt text; form errors name the field and focus it; themes do not remove focus or labels."
+    },
+    {
+      "requirement_or_scenario": "F.27",
+      "entry_point": "/admin-records.html import of tests/fixtures/final/scale_fixture.json (same route as F.01)",
+      "method_or_action": "Import scale fixture",
+      "role": "staff",
+      "setup": "Already imported on the live site",
+      "expected_behavior": "220 students, 110 projects, 25 partners through the same importer; directory filters use their structured skills/availability."
+    },
+    {
+      "requirement_or_scenario": "F.28",
+      "entry_point": "GET /api/students (directory first load)",
+      "method_or_action": "Network panel",
+      "role": "public",
+      "setup": "Scale fixture loaded",
+      "expected_behavior": "24 records (~8.5 KB) whether the database holds 17 or 240 students; X-Total-Count gives the total; 'Show more students' fetches the next page."
+    },
+    {
+      "requirement_or_scenario": "F.29",
+      "entry_point": "/index.html, /partners.html, project lists",
+      "method_or_action": "Network panel",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "No video, playable runtime, resume or full-size media requested by listing pages."
+    },
+    {
+      "requirement_or_scenario": "F.30",
+      "entry_point": "Company import with https://nonexistent.invalid/, invalid GitHub repo import, broken demo/video/image URLs, verification delivery failure",
+      "method_or_action": "Trigger failures",
+      "role": "staff / student / public",
+      "setup": "None",
+      "expected_behavior": "Each fails with a readable message and a manual/retry path; browsing and saved records unaffected."
+    },
+    {
+      "requirement_or_scenario": "F.31",
+      "entry_point": "Same as F.30",
+      "method_or_action": "Read the message",
+      "role": "all",
+      "setup": "None",
+      "expected_behavior": "Human-readable message, no raw exception; manual entry / retry offered."
+    },
+    {
+      "requirement_or_scenario": "F.32",
+      "entry_point": "/admin-records.html 'Diagnostics' -> GET /api/staff/diagnostics",
+      "method_or_action": "Open after a failure",
+      "role": "staff",
+      "setup": "Trigger F.30 first",
+      "expected_behavior": "Timestamped events (5xx and failed integrations with context, no secrets) and an audit trail of ownership/merge/maintainer/status changes."
+    },
+    {
+      "requirement_or_scenario": "F.33",
+      "entry_point": "/project.html?id={id}",
+      "method_or_action": "Open a project with a playable URL",
+      "role": "public",
+      "setup": "Project with playable_url",
+      "expected_behavior": "Nothing loads until 'Play demo' is clicked; it opens in a new tab."
+    },
+    {
+      "requirement_or_scenario": "F.34",
+      "entry_point": "/project.html?id={id}",
+      "method_or_action": "Unsupported device / no playable URL",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "Fallback image, note, video link and description remain; explanatory text shown."
+    },
+    {
+      "requirement_or_scenario": "F.35",
+      "entry_point": "/project.html?id={id}",
+      "method_or_action": "Open the page",
+      "role": "public",
+      "setup": "None",
+      "expected_behavior": "No camera/mic/XR permission is requested by our page; nothing is embedded."
+    },
+    {
+      "requirement_or_scenario": "F.36",
+      "entry_point": "/project-edit.html demo fields -> PUT /api/my/projects/{id}",
+      "method_or_action": "Enter markup instead of a URL",
+      "role": "maintainer",
+      "setup": "Own project",
+      "expected_behavior": "Only http(s) URLs are stored; no embed code is accepted; the demo never runs on our origin."
+    },
+    {
+      "requirement_or_scenario": "F.37",
+      "entry_point": "/project-edit.html 'Demo state' -> PUT /api/my/projects/{id} {demo_status, demo_status_note}",
+      "method_or_action": "Mark unavailable/archived/replaced",
+      "role": "maintainer",
+      "setup": "Own project",
+      "expected_behavior": "Play action withdrawn with an explanation; project, contributors and fallback evidence remain."
+    },
+    {
+      "requirement_or_scenario": "F.38",
+      "entry_point": "/project.html with a broken playable URL",
+      "method_or_action": "Launch and close",
+      "role": "public",
+      "setup": "Broken URL",
+      "expected_behavior": "The failure stays in the new tab; closing it returns to an unchanged, working project page and site navigation."
+    },
+    {
+      "requirement_or_scenario": "F.39",
+      "entry_point": "tests/*.js suites; R1-R4 journeys",
+      "method_or_action": "Run suites / journeys",
+      "role": "all",
+      "setup": "Local stack",
+      "expected_behavior": "See docs/final/REGRESSION_CHECKLIST.md (e2e 26, r3-api 50, r3-ui 27, r4-api 70, final-api 81, final-ui 29)."
+    },
+    {
+      "requirement_or_scenario": "F.40",
+      "entry_point": "docs/final/LAUNCH_NOTES.md",
+      "method_or_action": "Read",
+      "role": "all",
+      "setup": "None",
+      "expected_behavior": "Known limitations, migration issues, operational assumptions and risks."
+    },
+    {
+      "requirement_or_scenario": "F.41",
+      "entry_point": "git tag FINAL-submission",
+      "method_or_action": "Check out the tag",
+      "role": "all",
+      "setup": "None",
+      "expected_behavior": "The assessed commit; full SHA in the Moodle submission text."
+    },
     {
       "requirement_or_scenario": "R4.01",
       "entry_point": "/staff-login.html and POST /auth/staff/login",
@@ -449,12 +777,16 @@
       "expected_behavior": "The tag R3-submission exists and names the commit recorded as the assessed version."
     }
   ],
-  "fixture_setup": "Release 4 company pages are hosted unchanged at https://team08-r1-frontend.onrender.com/fixtures/r4/company_normal.html, company_sparse.html, company_prompt_injection.html and company_same_name_other_domain.html (no instructor URLs were supplied). backend/data/r4/expected_company_imports.json is the acceptance criteria asserted by tests/r4-api.js; backend/data/r4/collaboration_seed.json was entered through the staff UI as the live North Shore Simulations and Superior Immersive Labs collaborations. Earlier fixtures load as before (R1 seeds on first boot; standard_roles.json; project_duplicate_cases.json; demo files at /demo/). Migrations schema.sql to schema_r4.sql run on every boot.",
-  "test_access": "Staff: username immxrsive.staff at https://team08-r1-frontend.onrender.com/staff-login.html; the password is in the Moodle Release 4 Product Result text and the private course channel, never in the repository. Students: reviewers sign in with their own GitHub account at /account.html and verify an @algomau.ca address, then add a project to become its maintainer. Live evidence ids: partner co_ec8a3c39c41f596e4701b5ac (imported, published, two collaborations), partner co_8edf6b8214d990b82f9add2b (private + limited collaborations), project proj_e8af7eb93cb98fd52ce900e9 (approved partner, plus a pending partner request and a pending verification request).",
-  "automated_suites": {
-    "tests/r4-api.js": "70 checks over the R4 surface (staff authorization, the four fixture imports, R4.10, drafts, fallback, provenance, duplicate domain, staff-edit preservation, collaborations and visibility, verification and partner requests, partner inquiry). Local test database only: it deletes partners with the fixture names. Needs ALLOW_PRIVATE_IMPORT=true on a local backend so it can fetch the locally served fixtures.",
-    "tests/r3-api.js": "50 checks over the R3 route surface: authorization boundaries, the lost-update conflict, invitation visibility, soft-delete and restore, URL rejection, and all three project_duplicate_cases.json rows. Run with DATABASE_URL and BASE_URL set. Cleans up the synthetic students it creates.",
-    "tests/r3-ui.js": "27 browser checks over the Add Project, GitHub import, invite, accept, contribution, publish, Play-demo, broken-demo and 390px journeys.",
-    "tests/e2e.js": "26 browser checks over the Release 1 requirements, used as the R3.25 regression gate."
-  }
+  "fixture_setup": "Final: legacy_export.json and scale_fixture.json are imported on the live site through /admin-records.html (runs listed under Import history); copies are in tests/fixtures/final/. Earlier fixtures as in R4: Release 4 company pages are hosted unchanged at https://team08-r1-frontend.onrender.com/fixtures/r4/company_normal.html, company_sparse.html, company_prompt_injection.html and company_same_name_other_domain.html (no instructor URLs were supplied). backend/data/r4/expected_company_imports.json is the acceptance criteria asserted by tests/r4-api.js; backend/data/r4/collaboration_seed.json was entered through the staff UI as the live North Shore Simulations and Superior Immersive Labs collaborations. Earlier fixtures load as before (R1 seeds on first boot; standard_roles.json; project_duplicate_cases.json; demo files at /demo/). Migrations schema.sql to schema_r4.sql run on every boot.",
+  "test_access": "Staff: username immxrsive.staff at https://team08-r1-frontend.onrender.com/staff-login.html; the password is in the Moodle Final Product Result text (Reviewer test access) and the private course channel, never in the repository. Students: reviewers sign in with their own GitHub account at /account.html and verify an @algomau.ca address, then add a project to become its maintainer. Live evidence ids: partner co_ec8a3c39c41f596e4701b5ac (imported, published, two collaborations), partner co_8edf6b8214d990b82f9add2b (private + limited collaborations), project proj_e8af7eb93cb98fd52ce900e9 (approved partner, plus a pending partner request and a pending verification request). Final: claimants use any verified account on /account.html (search 'Unclaimed Alum' or 'Daniel Kim'); staff resolve on /admin-records.html.",
+  "automated_suites": [
+    "tests/final-api.js (81 checks, local DB)",
+    "tests/final-ui.js (29 checks, local stack)",
+    {
+      "tests/r4-api.js": "70 checks over the R4 surface (staff authorization, the four fixture imports, R4.10, drafts, fallback, provenance, duplicate domain, staff-edit preservation, collaborations and visibility, verification and partner requests, partner inquiry). Local test database only: it deletes partners with the fixture names. Needs ALLOW_PRIVATE_IMPORT=true on a local backend so it can fetch the locally served fixtures.",
+      "tests/r3-api.js": "50 checks over the R3 route surface: authorization boundaries, the lost-update conflict, invitation visibility, soft-delete and restore, URL rejection, and all three project_duplicate_cases.json rows. Run with DATABASE_URL and BASE_URL set. Cleans up the synthetic students it creates.",
+      "tests/r3-ui.js": "27 browser checks over the Add Project, GitHub import, invite, accept, contribution, publish, Play-demo, broken-demo and 390px journeys.",
+      "tests/e2e.js": "26 browser checks over the Release 1 requirements, used as the R3.25 regression gate."
+    }
+  ]
 }
