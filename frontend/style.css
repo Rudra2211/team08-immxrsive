@@ -6,40 +6,45 @@
    Body type stays Atkinson Hyperlegible for low-vision readers; display type
    is Bricolage Grotesque. Presentation only: no selector here changes what a
    page does. */
-@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Inter+Tight:wght@500;600;700;800&family=Instrument+Serif:ital@0;1&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Serif:ital@0;1&display=swap");
 
 /* ---- Tokens ------------------------------------------------------------- */
 :root {
   color-scheme: dark;
-  /* Final look: near-black stage, one electric green, playful badge colours. */
-  --bg: #08090a;
-  --bg-2: #0c0e0d;
-  --surface: rgba(20, 23, 22, 0.78);
-  --surface-solid: #141716;
-  --surface-hi: rgba(26, 30, 28, 0.86);
-  --ink: #f2f5f3;
-  --muted: #a4aeaa;
-  --line: rgba(220, 255, 235, 0.10);
-  --line-strong: rgba(220, 255, 235, 0.22);
-  --brand: #3dfc8f;         /* electric green */
-  --brand-dark: #22d873;
-  --brand-ink: #04170b;     /* text on brand fills */
-  --brand-soft: rgba(61, 252, 143, 0.12);
-  --aurora-a: 61, 252, 143;
-  --aurora-b: 168, 123, 255;
-  --aurora-c: 255, 104, 178;
+  --bg: #060b12;            /* night over the lake */
+  --bg-2: #0a1520;
+  --surface: rgba(16, 28, 40, 0.72);
+  --surface-solid: #101c28;
+  --surface-hi: rgba(28, 46, 62, 0.78);
+  --ink: #eaf3f1;
+  --muted: #a3b6ba;
+  --line: rgba(160, 205, 210, 0.16);
+  --line-strong: rgba(160, 225, 210, 0.34);
+  --brand: #5ee0b0;         /* aurora green */
+  --brand-dark: #2fbf8e;
+  --brand-ink: #03201a;     /* text on brand fills */
+  --brand-soft: rgba(94, 224, 176, 0.12);
+  --aurora-a: 94, 224, 176;
+  --aurora-b: 154, 140, 255;
+  --aurora-c: 92, 200, 255;
   --focus: #ffd166;
-  --radius: 22px;
+  --radius: 18px;
   --radius-sm: 12px;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 24px 60px -30px rgba(0, 0, 0, 0.9);
-  --heading: "Inter Tight", "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --heading: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --body: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* The browser's cross-document view transitions are not used: an aborted one
-   reports a console error during fast navigation. */
+/* Cross-page transitions: in browsers that support them, moving between pages
+   dissolves instead of flashing. Elsewhere this is simply ignored. */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: vt-out 280ms var(--ease-out) both; }
+::view-transition-new(root) { animation: vt-in 520ms var(--ease-out) both; }
+@keyframes vt-out { to { opacity: 0; transform: scale(0.985); filter: blur(6px); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(14px) scale(1.01); filter: blur(8px); } }
+header.site { view-transition-name: site-header; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
@@ -547,76 +552,7 @@ main h1 + p.lede, main h1 + p { animation: rise 1000ms 140ms var(--ease-out) bot
 form.stack { display: grid; gap: 0.35rem; max-width: 36rem; }
 .report-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.6rem; }
 
-/* =========================================================================
-   Final look — inspired by kinetic-type launch pages: a black stage, one
-   electric accent, oversized tight headlines, solid pill actions, and
-   colourful "name badge" cards. Presentation only; no selector changes what
-   a page does, and every motion stops under prefers-reduced-motion.
-   ========================================================================= */
-body {
-  background:
-    radial-gradient(60% 40% at 15% -5%, rgba(var(--aurora-a), 0.10), transparent 70%),
-    radial-gradient(50% 40% at 90% 0%, rgba(var(--aurora-b), 0.10), transparent 70%),
-    var(--bg);
-}
-body::before { opacity: 0.45; }
-main::before { opacity: 0.22; }
-a, a:visited { color: var(--brand); }
-a:hover { color: #9dffc6; }
-
-/* Header: a quiet bar — wordmark left, one solid green action right. */
-header.site { background: rgba(8, 9, 10, 0.72); }
-header.site::after { opacity: 0.5; }
-header.site a.brand::before { border-radius: 7px; }
-
-/* Headlines: oversized, heavy and tight. */
-h1 { font-weight: 800; letter-spacing: -0.045em; line-height: 0.98; }
-h2 { font-weight: 700; letter-spacing: -0.03em; }
-
-/* Actions: solid electric-green pills; secondary ones are outlined ghosts. */
-button, .btn, a.btn:visited {
-  background: var(--brand); color: var(--brand-ink);
-  font-family: var(--heading); font-weight: 700; letter-spacing: -0.01em;
-  padding: 0.78rem 1.45rem;
-  box-shadow: 0 0 0 0 rgba(var(--aurora-a), 0), 0 12px 32px -14px rgba(var(--aurora-a), 0.8);
-}
-button:hover, .btn:hover {
-  background: #6dffab; color: var(--brand-ink);
-  box-shadow: 0 0 0 6px rgba(var(--aurora-a), 0.14), 0 16px 40px -14px rgba(var(--aurora-a), 0.95);
-}
-button.secondary, .btn.secondary, a.btn.secondary:visited {
-  background: transparent; color: var(--ink); border: 1px solid rgba(255, 255, 255, 0.22);
-}
-button.secondary:hover, .btn.secondary:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.5); box-shadow: none; }
-[data-theme="classic"] button:not(.secondary), [data-theme="classic"] .btn:not(.secondary) { background: var(--brand); }
-
-/* Surfaces: flat graphite with a hairline edge. */
-.panel { background: var(--surface); border-color: var(--line); border-radius: var(--radius); }
-.panel::before { opacity: 0.6; }
-
-/* Cards read like name badges: a colourful band on top, a punched clip hole,
-   and a gentle lift. The band colour rotates through a playful palette. */
-.cards { gap: 1.3rem; }
-.card {
-  --band-a: 61, 252, 143; --band-b: 64, 196, 255;
-  /* The badge band and its clip hole are background layers of the card. */
-  background:
-    radial-gradient(circle at 50% 1rem, var(--surface-solid) 0.34rem, transparent 0.38rem) top / 100% 3rem no-repeat,
-    linear-gradient(120deg, rgb(var(--band-a)), rgb(var(--band-b))) top / 100% 3rem no-repeat,
-    var(--surface-solid);
-  border: 1px solid var(--line); border-radius: 24px;
-  padding: 4.1rem 1.35rem 1.35rem; overflow: hidden;
-}
-.cards > .card:nth-child(5n + 2) { --band-a: 168, 123, 255; --band-b: 255, 104, 178; }
-.cards > .card:nth-child(5n + 3) { --band-a: 255, 176, 64;  --band-b: 255, 92, 120; }
-.cards > .card:nth-child(5n + 4) { --band-a: 64, 196, 255;  --band-b: 168, 123, 255; }
-.cards > .card:nth-child(5n + 5) { --band-a: 255, 104, 178; --band-b: 255, 214, 92; }
-.card:hover, .card:focus-within { border-color: rgba(255, 255, 255, 0.18); }
-.card h3 { font-size: 1.22rem; letter-spacing: -0.02em; }
-.tag { background: rgba(255, 255, 255, 0.06); border-color: transparent; }
-.chip { color: #d9ffe9; }
-
-/* ---- Home hero ------------------------------------------------------------ */
+/* ---- Home hero: "Talent in Orbit" globe (orbit.js) ----------------------- */
 .hero {
   position: relative; isolation: isolate; text-align: center;
   margin: -0.75rem 0 2.4rem; padding: 5.5rem 1.2rem 4.5rem;
@@ -627,59 +563,8 @@ button.secondary:hover, .btn.secondary:hover { background: rgba(255, 255, 255, 0
 .hero .lede { margin: 0 auto 2rem; color: #c9d1cd; }
 .hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; }
 .hero-actions .btn { margin: 0; }
-/* The highlighted word sits in an editor-style selection box. */
-.hl {
-  position: relative; display: inline-block; color: var(--brand); padding: 0 0.12em;
-  outline: 2px solid rgba(var(--aurora-a), 0.7); outline-offset: 0.06em;
-}
-.hl::before, .hl::after {
-  content: ""; position: absolute; width: 0.16em; height: 0.16em; background: var(--bg);
-  border: 2px solid var(--brand);
-}
-.hl::before { left: -0.14em; top: -0.14em; }
-.hl::after { right: -0.14em; bottom: -0.14em; }
-/* Behind the headline: a slow-drifting mosaic of colour tiles, dimmed. */
-.hero-mosaic {
-  position: absolute; inset: -10% -5%; z-index: -1; pointer-events: none;
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; transform: rotate(-6deg);
-  animation: mosaic 40s linear infinite alternate;
-}
-.hero-mosaic span {
-  border-radius: 20px; min-height: 150px; opacity: 0.5;
-  background: linear-gradient(135deg, rgb(var(--a)), rgb(var(--b)));
-}
-.hero-mosaic span:nth-child(6n + 1) { --a: 61, 252, 143;  --b: 22, 120, 80; }
-.hero-mosaic span:nth-child(6n + 2) { --a: 168, 123, 255; --b: 60, 30, 140; }
-.hero-mosaic span:nth-child(6n + 3) { --a: 255, 104, 178; --b: 120, 20, 70; }
-.hero-mosaic span:nth-child(6n + 4) { --a: 255, 176, 64;  --b: 140, 60, 10; }
-.hero-mosaic span:nth-child(6n + 5) { --a: 64, 196, 255;  --b: 10, 60, 120; }
-.hero-mosaic span:nth-child(6n + 6) { --a: 240, 240, 240; --b: 60, 60, 60; }
-.hero::after {
-  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(55% 60% at 50% 45%, rgba(8, 9, 10, 0.92), rgba(8, 9, 10, 0.55) 70%, rgba(8, 9, 10, 0.35)),
-    linear-gradient(180deg, transparent 60%, var(--bg));
-}
-@keyframes mosaic { to { transform: rotate(-6deg) translateY(-12%); } }
-@media (max-width: 560px) {
-  .hero { padding: 3.5rem 1rem 3rem; }
-  .hero-mosaic { grid-template-columns: repeat(3, 1fr); }
-}
-@media (prefers-reduced-motion: reduce) { .hero-mosaic { animation: none; } }
+.hero-orbit .hl { position: static; display: inline; }
 
-/* Profile and project pages open with the same badge band as the cards. */
-#profile > .panel:first-of-type, #project > .panel:first-of-type {
-  padding-top: 4.4rem;
-  background:
-    radial-gradient(circle at 50% 1.1rem, var(--bg) 0.38rem, transparent 0.42rem) top / 100% 3.2rem no-repeat,
-    linear-gradient(110deg, rgb(var(--aurora-a)), rgb(var(--aurora-b)) 55%, rgb(var(--aurora-c))) top / 100% 3.2rem no-repeat,
-    var(--surface);
-}
-dl.facts + h2, dl.facts + h3 { margin-top: 1.8rem; }
-
-
-
-/* ---- Home hero: "Talent in Orbit" globe (orbit.js) ----------------------- */
 /* A light stage like a studio backdrop, so the colourful badges read as
    physical cards floating on a sphere. */
 .hero.hero-orbit {
