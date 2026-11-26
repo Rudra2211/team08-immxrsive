@@ -125,7 +125,8 @@ const BASE = (process.env.BASE_URL || "http://127.0.0.1:4200").replace(/\/+$/, "
   await page.goto(`${BASE}/index.html`);
   await page.waitForFunction(() => document.querySelectorAll("#results > li").length > 0, { timeout: 15000 });
   const seen = [];
-  for (let i = 0; i < 12; i++) {
+  // 16 presses: the header and the home hero's two actions come before the filters.
+  for (let i = 0; i < 16; i++) {
     await page.keyboard.press("Tab");
     seen.push(await page.evaluate(() => {
       const a = document.activeElement;
