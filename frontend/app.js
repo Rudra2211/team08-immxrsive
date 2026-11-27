@@ -299,7 +299,7 @@ function showNotice(container, message, type = "error") {
   const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
   if (!fine.matches || calm.matches) return;
 
-  const MAX = 6; // degrees
+  const MAX = 10; // degrees
   let active = null;
 
   function reset(card) {
@@ -325,6 +325,62 @@ function showNotice(container, message, type = "error") {
   }, { passive: true });
 
   document.addEventListener("pointerleave", () => { if (active) reset(active); active = null; });
+})();
+
+/**
+ * Directory cards open in 3D: the clicked card lifts, turns toward the
+ * visitor and grows to the centre of the screen, then the full page opens and
+ * flips in. Presentation only: the link's own address is followed, modified
+ * clicks (new tab, etc.) are left alone, and anyone who asked for less motion
+ * gets the ordinary instant navigation.
+ */
+(function cardLaunch() {
+  const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const root = document.documentElement;
+  try {
+    if (sessionStorage.getItem("card-launch") === "1") {
+      sessionStorage.removeItem("card-launch");
+      if (!calm.matches) root.classList.add("from-card");
+    }
+  } catch (_) { /* storage blocked: no entrance animation */ }
+
+  document.addEventListener("click", (e) => {
+    if (calm.matches || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const link = e.target instanceof Element ? e.target.closest(".cards .card a[href]") : null;
+    if (!link || link.target === "_blank" || link.origin !== location.origin) return;
+    const card = link.closest(".card");
+    if (document.querySelector(".launch-stage")) return;
+    e.preventDefault();
+
+    // A fixed-position copy of the card does the flight, so page layout and
+    // scroll position are never disturbed.
+    const r = card.getBoundingClientRect();
+    const stage = el("div", { class: "launch-stage", "aria-hidden": "true" });
+    const ghost = card.cloneNode(true);
+    ghost.classList.remove("is-tilting");
+    ghost.classList.add("is-launching");
+    ghost.removeAttribute("style");
+    Object.assign(ghost.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px` });
+    ghost.style.setProperty("--lx", `${(innerWidth / 2 - (r.left + r.width / 2)).toFixed(0)}px`);
+    ghost.style.setProperty("--ly", `${(innerHeight / 2 - (r.top + r.height / 2)).toFixed(0)}px`);
+    ghost.querySelectorAll("a, button").forEach((n) => n.setAttribute("tabindex", "-1"));
+    stage.appendChild(ghost);
+    document.body.appendChild(stage);
+    card.style.visibility = "hidden";
+    card.closest(".cards").classList.add("has-launch");
+    try { sessionStorage.setItem("card-launch", "1"); } catch (_) { /* fine */ }
+    let gone = false;
+    const go = () => { if (!gone) { gone = true; location.assign(link.href); } };
+    ghost.addEventListener("animationend", go, { once: true });
+    setTimeout(go, 650);
+    // Coming back with the Back button restores the page as it was.
+    window.addEventListener("pageshow", (ev) => {
+      if (!ev.persisted) return;
+      stage.remove();
+      card.style.visibility = "";
+      card.closest(".cards").classList.remove("has-launch");
+    }, { once: true });
+  });
 })();
 
 /**

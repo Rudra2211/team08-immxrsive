@@ -7,10 +7,52 @@ const resultsEl = document.getElementById("results");
 const countEl = document.getElementById("result-count");
 const errorEl = document.getElementById("results-error");
 const activeEl = document.getElementById("active-filters");
+const termsEl = document.getElementById("q-terms");
+const skillChipsEl = document.getElementById("skill-chips");
+
+// Search terms are kept as removable chips. The API matches students who
+// have every term (in name, headline or skills), so more terms narrow results.
+let terms = [];
+
+function addTerms(text) {
+  for (const t of String(text).split(/[\s,]+/).filter(Boolean)) {
+    if (!terms.some((x) => x.toLowerCase() === t.toLowerCase())) terms.push(t);
+  }
+}
+
+function removableChip(label, ariaLabel, onRemove) {
+  const btn = el("button", { type: "button", "aria-label": ariaLabel, text: "\u00d7" });
+  btn.addEventListener("click", onRemove);
+  return el("li", { class: "term-chip" }, [el("span", { text: label }), btn]);
+}
+
+function renderTermChips() {
+  termsEl.innerHTML = "";
+  for (const t of terms) {
+    termsEl.appendChild(removableChip(t, `Remove search term ${t}`, () => {
+      terms = terms.filter((x) => x !== t);
+      renderTermChips();
+      apply();
+      qInput.focus();
+    }));
+  }
+}
+
+function renderSkillChips() {
+  skillChipsEl.innerHTML = "";
+  for (const o of Array.from(skillSelect.selectedOptions)) {
+    skillChipsEl.appendChild(removableChip(o.value, `Remove skill ${o.value}`, () => {
+      o.selected = false;
+      renderSkillChips();
+      apply();
+      skillSelect.focus();
+    }));
+  }
+}
 
 function currentFilters() {
   return {
-    q: qInput.value.trim(),
+    q: terms.join(" "),
     skill: Array.from(skillSelect.selectedOptions).map((o) => o.value),
     availability: Array.from(form.querySelectorAll('input[name="availability"]:checked')).map((i) => i.value),
     status: Array.from(form.querySelectorAll('input[name="status"]:checked')).map((i) => i.value),
@@ -31,9 +73,13 @@ function filtersToQuery(f) {
 
 function applyQueryToForm() {
   const p = new URLSearchParams(window.location.search);
-  qInput.value = p.get("q") || "";
+  terms = [];
+  addTerms(p.get("q") || "");
+  qInput.value = "";
+  renderTermChips();
   const skills = p.getAll("skill");
   for (const opt of skillSelect.options) opt.selected = skills.includes(opt.value);
+  renderSkillChips();
   const avail = p.getAll("availability");
   const status = p.getAll("status");
   form.querySelectorAll('input[name="availability"]').forEach((i) => { i.checked = avail.includes(i.value); });
@@ -44,7 +90,7 @@ function applyQueryToForm() {
 function renderActiveFilters(f) {
   activeEl.innerHTML = "";
   const chips = [];
-  if (f.q) chips.push(`Search: “${f.q}”`);
+  for (const t of f.q.split(" ").filter(Boolean)) chips.push(`Search: “${t}”`);
   for (const s of f.skill) chips.push(`Skill: ${s}`);
   for (const a of f.availability) chips.push(`Availability: ${titleCase(a)}`);
   for (const s of f.status) chips.push(`Status: ${titleCase(s)}`);
@@ -97,8 +143,10 @@ async function loadSkills() {
 const PAGE = 24;
 const moreBtn = document.getElementById("load-more");
 let shown = 0;
+let latest = 0; // only the newest request may draw results
 
 async function loadStudents(append = false) {
+  const ticket = ++latest;
   const f = currentFilters();
   if (!append) {
     renderActiveFilters(f);
@@ -113,6 +161,7 @@ async function loadStudents(append = false) {
     query.set("limit", String(PAGE));
     if (shown) query.set("offset", String(shown));
     const data = await apiGet(`/api/students?${query.toString()}`);
+    if (ticket !== latest) return;
     const total = Number.isFinite(data.total) ? data.total : data.length;
     if (!append) resultsEl.innerHTML = "";
 
@@ -136,6 +185,7 @@ async function loadStudents(append = false) {
       if (first) first.focus();
     }
   } catch (err) {
+    if (ticket !== latest) return;
     console.error(err);
     resultsEl.innerHTML = "";
     countEl.textContent = "";
@@ -145,17 +195,42 @@ async function loadStudents(append = false) {
 
 moreBtn.addEventListener("click", () => loadStudents(true));
 
-form.addEventListener("submit", (e) => {
-  e.preventDefault();
+function apply() {
   const query = filtersToQuery(currentFilters()).toString();
   const url = query ? `?${query}` : window.location.pathname;
   window.history.replaceState({}, "", url);
   loadStudents();
+}
+
+// Enter in the search box submits: whatever was typed becomes chips.
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  addTerms(qInput.value);
+  qInput.value = "";
+  renderTermChips();
+  apply();
 });
+
+// One click picks or un-picks a skill (no Ctrl needed); Ctrl/Shift-click keep
+// the browser's own range selection.
+skillSelect.addEventListener("mousedown", (e) => {
+  const o = e.target;
+  if (!(o instanceof HTMLOptionElement) || e.ctrlKey || e.metaKey || e.shiftKey) return;
+  e.preventDefault();
+  const top = skillSelect.scrollTop;
+  o.selected = !o.selected;
+  skillSelect.focus();
+  skillSelect.scrollTop = top;
+  skillSelect.dispatchEvent(new Event("change", { bubbles: true }));
+});
+skillSelect.addEventListener("change", () => { renderSkillChips(); apply(); });
 
 clearBtn.addEventListener("click", () => {
   qInput.value = "";
+  terms = [];
+  renderTermChips();
   for (const opt of skillSelect.options) opt.selected = false;
+  renderSkillChips();
   form.querySelectorAll('input[type="checkbox"]').forEach((i) => { i.checked = false; });
   window.history.replaceState({}, "", window.location.pathname);
   loadStudents();

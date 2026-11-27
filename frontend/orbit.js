@@ -20,9 +20,9 @@
   const focus = document.getElementById("orbit-focus");
   const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
 
+  // The site's aurora colours (style.css --aurora-a/b/c), paired.
   const BANDS = [
-    ["#3dfc8f", "#40c4ff"], ["#a87bff", "#ff68b2"], ["#ffb040", "#ff5c78"],
-    ["#40c4ff", "#a87bff"], ["#ff68b2", "#ffd65c"], ["#2bd9a0", "#3d7bff"],
+    ["#5ee0b0", "#5cc8ff"], ["#9a8cff", "#5cc8ff"], ["#5ee0b0", "#9a8cff"],
   ];
   const RINGS = [-62, -37, -12, 12, 37, 62];
   const rad = (d) => (d * Math.PI) / 180;
@@ -32,16 +32,20 @@
   let R = 240;
   let rx = -12;
   let ry = 0;
-  let vy = calm.matches ? 0 : 0.12; // degrees per frame
+  const SPIN = 0.12; // degrees per frame
+  let vy = SPIN;
   let dragging = null;
-  let hover = false;
-  let openIndex = -1;
+  // The globe always turns; the Pause button (WCAG 2.2.2) stops it, and anyone
+  // who asked for less motion starts paused.
+  const pauseBtn = document.getElementById("orbit-pause");
+  let paused = calm.matches;
 
   const initials = (name) =>
     String(name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
 
   function build() {
     R = Math.max(130, Math.min(host.clientWidth, host.clientHeight || host.clientWidth) * 0.45);
+    host.style.setProperty("--globe", `${Math.round(R * 2)}px`);
     const tw = Math.round(R * 0.44);
     const th = Math.round(R * 0.32);
     sphere.innerHTML = "";
@@ -103,19 +107,25 @@
   }
 
   function frame() {
-    if (!dragging && !hover && openIndex < 0) ry += vy;
     if (!dragging) {
-      // Inertia after a fling settles back to the idle spin.
-      const idle = calm.matches ? 0 : 0.12;
-      vy += (idle - vy) * 0.02;
+      ry += vy;
+      // Inertia after a fling settles back to the steady spin (or to rest).
+      vy += ((paused ? 0 : SPIN) - vy) * 0.02;
+      if (paused && Math.abs(vy) < 0.002) vy = 0;
     }
     sphere.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
     shade();
     requestAnimationFrame(frame);
   }
 
-  host.addEventListener("pointerenter", () => { hover = true; });
-  host.addEventListener("pointerleave", () => { hover = false; });
+  function setPaused(p) {
+    paused = p;
+    if (p) vy = 0;
+    if (!pauseBtn) return;
+    pauseBtn.textContent = p ? "Spin globe" : "Pause globe";
+  }
+  if (pauseBtn) pauseBtn.addEventListener("click", () => setPaused(!paused));
+  setPaused(paused);
   host.addEventListener("pointerdown", (e) => {
     dragging = { lastX: e.clientX, lastY: e.clientY, moved: 0, target: e.target };
     host.setPointerCapture(e.pointerId);
@@ -147,7 +157,6 @@
   function open(k, fromEl) {
     const s = students[k];
     if (!s || !focus) return;
-    openIndex = k;
     returnFocus = document.activeElement;
     const [a, b] = BANDS[k % BANDS.length];
     const card = focus.querySelector(".orbit-card");
@@ -180,7 +189,6 @@
 
   function close() {
     if (!focus || focus.hidden) return;
-    openIndex = -1;
     if (countEl) countEl.textContent = "00";
     focus.hidden = true;
     if (returnFocus && returnFocus.focus) returnFocus.focus();

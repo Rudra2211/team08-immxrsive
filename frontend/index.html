@@ -29,21 +29,23 @@
     <div class="orbit" aria-hidden="true"><div class="orbit-sphere"></div></div>
     <p class="orbit-count" aria-hidden="true"><b>00</b> / <i>00</i></p>
     <p class="orbit-caption" aria-hidden="true"><span>Talent</span> in Orbit</p>
-    <p class="orbit-hint" aria-hidden="true">Drag to spin · click a card</p>
+    <p class="orbit-hint"><span aria-hidden="true">Drag to spin · click a card</span> <button type="button" class="secondary" id="orbit-pause">Pause globe</button></p>
   </section>
 
   <form class="panel" id="filters" novalidate>
     <div class="controls-row">
       <div>
         <label for="q">Search by name, headline or skill</label>
-        <input type="search" id="q" name="q" autocomplete="off" placeholder="e.g. XR, Unity, Sofia" />
-        <p class="help" id="q-help">Case-insensitive. Matches part of a word.</p>
+        <input type="search" id="q" name="q" autocomplete="off" placeholder="e.g. XR, Unity, Sofia" aria-describedby="q-help" />
+        <ul class="term-chips" id="q-terms" aria-label="Search terms"></ul>
+        <p class="help" id="q-help">Type a name, headline word or skill and press Enter to add it. Add as many as you like; a student must match <strong>every</strong> term. Remove one with &times;. Case-insensitive, matches part of a word.</p>
       </div>
       <div>
         <label for="skill">Skills</label>
         <select id="skill" name="skill" multiple aria-describedby="skill-help">
         </select>
-        <p class="help" id="skill-help">Hold Ctrl (Cmd on Mac) to pick more than one. A student must have <strong>all</strong> selected skills.</p>
+        <ul class="term-chips" id="skill-chips" aria-label="Selected skills"></ul>
+        <p class="help" id="skill-help">Click a skill to add it; click it again or press &times; to remove it. A student must have <strong>all</strong> selected skills.</p>
       </div>
     </div>
 
