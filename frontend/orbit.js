@@ -8,8 +8,8 @@
  * It only re-presents the students the directory already loaded (the first
  * page), so it adds no request (F.28) and no heavy asset (F.29). The globe is
  * decoration for pointer users (aria-hidden, no tab stops): every student it
- * shows is also in the keyboard-accessible results list below it. Anyone who
- * asked for less motion gets a still globe they can still drag.
+ * shows is also in the keyboard-accessible results list below it. It turns
+ * constantly; the visible Pause button stops it for anyone who wants it still.
  */
 (function orbit() {
   const host = document.querySelector(".orbit");
@@ -18,7 +18,6 @@
   const countEl = document.querySelector(".orbit-count b");
   const totalEl = document.querySelector(".orbit-count i");
   const focus = document.getElementById("orbit-focus");
-  const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   // The site's aurora colours (style.css --aurora-a/b/c), paired.
   const BANDS = [
@@ -32,13 +31,16 @@
   let R = 240;
   let rx = -12;
   let ry = 0;
-  const SPIN = 0.12; // degrees per frame
+  // Degrees per 60 Hz frame; scaled by real elapsed time, so the globe turns at
+  // the same speed (one turn in about 40 s) however fast the browser draws.
+  const SPIN = 0.15;
   let vy = SPIN;
   let dragging = null;
-  // The globe always turns; the Pause button (WCAG 2.2.2) stops it, and anyone
-  // who asked for less motion starts paused.
+  // The globe always turns, for everyone; the Pause button (WCAG 2.2.2)
+  // stops it.
   const pauseBtn = document.getElementById("orbit-pause");
-  let paused = calm.matches;
+  let paused = false;
+  let last = 0;
 
   const initials = (name) =>
     String(name || "?").split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("");
@@ -106,11 +108,15 @@
     }
   }
 
-  function frame() {
+  function frame(now) {
+    // Frames elapsed at 60 Hz; capped so a tab coming back from the
+    // background does not jump.
+    const k = last ? Math.min((now - last) / (1000 / 60), 6) : 1;
+    last = now;
     if (!dragging) {
-      ry += vy;
+      ry += vy * k;
       // Inertia after a fling settles back to the steady spin (or to rest).
-      vy += ((paused ? 0 : SPIN) - vy) * 0.02;
+      vy += ((paused ? 0 : SPIN) - vy) * Math.min(0.02 * k, 1);
       if (paused && Math.abs(vy) < 0.002) vy = 0;
     }
     sphere.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
